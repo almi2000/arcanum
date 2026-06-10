@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcanum — Entkomme dem Turm des Erzmagiers</title>
+  <meta name="description" content="Ein 3D-Fantasy-Escape-Room im Browser. Löse die Rätsel des Erzmagiers und entkomme seinem Turm." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x1F5DD;</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="crosshair"></div>
+    <div id="hover-label"></div>
+    <div id="objective">
+      <span class="objective-title">Aufgabe</span>
+      <span id="objective-text">Sieh dich um. Irgendetwas hier verrät den Ausweg.</span>
+    </div>
+    <div id="timer">00:00</div>
+    <div id="toast"></div>
+    <div id="inventory">
+      <div class="slot" id="slot-feuer" title="Feuerrune"><span>ᚠ</span></div>
+      <div class="slot" id="slot-mond" title="Mondrune"><span>ᛗ</span></div>
+      <div class="slot" id="slot-stern" title="Sternenrune"><span>ᛏ</span></div>
+      <div class="slot" id="slot-key" title="Messingschlüssel"><span>⚷</span></div>
+    </div>
+  </div>
+
+  <!-- Lesepanel (Buch / Hinweise) -->
+  <div id="reading" class="hidden">
+    <div class="parchment">
+      <h2 id="reading-title"></h2>
+      <div id="reading-body"></div>
+      <p class="reading-hint">— klicke, um das Buch zu schließen —</p>
+    </div>
+  </div>
+
+  <!-- Titelbildschirm -->
+  <div id="title-screen">
+    <div class="title-inner">
+      <p class="title-kicker">Ein Kammerspiel in einem Zug</p>
+      <h1>Arcanum</h1>
+      <p class="title-sub">Entkomme dem Turm des Erzmagiers</p>
+      <p class="title-story">
+        Der Erzmagier hat dich in seiner Studierkammer eingeschlossen,
+        während er „nur kurz etwas Schwefel holen“ wollte. Das war vor drei Stunden.
+        Die Tür ist versiegelt, die Fenster zu schmal — aber ein Turm voller Magie
+        ist auch ein Turm voller Schlupflöcher.
+      </p>
+      <button id="start-btn">Die Kammer betreten</button>
+      <p class="title-controls"><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Maus</b> umsehen &nbsp;·&nbsp; <b>Klick</b> benutzen</p>
+      <p class="title-note">Desktop &amp; Maus empfohlen</p>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause-screen" class="hidden">
+    <div class="title-inner">
+      <h1 class="small">Innehalten</h1>
+      <p class="title-sub">Die Zeit im Turm läuft weiter …</p>
+      <button id="resume-btn">Weiter</button>
+    </div>
+  </div>
+
+  <!-- Sieg -->
+  <div id="win-screen" class="hidden">
+    <div class="title-inner">
+      <p class="title-kicker">Die Schwelle ist überschritten</p>
+      <h1>Entkommen</h1>
+      <p class="title-sub">Du bist dem Erzmagier entwischt in</p>
+      <p id="win-time">00:00</p>
+      <p class="title-story">
+        Hinter dir verklingt das Murren des Turms. Irgendwo oben flucht jemand
+        sehr Altes, sehr Mächtiges — und sucht seinen Messingschlüssel.
+      </p>
+      <button id="again-btn">Noch einmal</button>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

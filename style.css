@@ -1,0 +1,306 @@
+/* ============ Arcanum — UI ============ */
+
+:root {
+  --ink: #2a1d12;
+  --parchment: #e9d8ab;
+  --parchment-dark: #d8c28c;
+  --gold: #c9a227;
+  --gold-bright: #f0c84a;
+  --indigo: #0d0a1a;
+  --indigo-soft: #1a1430;
+  --ember: #e2722f;
+  --font-display: "Grenze Gotisch", serif;
+  --font-body: "IM Fell English", serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--indigo);
+  font-family: var(--font-body);
+  color: var(--parchment);
+  user-select: none;
+}
+
+#scene { position: fixed; inset: 0; display: block; }
+
+.hidden { display: none !important; }
+
+/* ---------- Atmosphäre-Overlays ---------- */
+
+#vignette {
+  position: fixed; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(5, 3, 12, 0.55) 100%);
+}
+
+#grain {
+  position: fixed; inset: -50%; pointer-events: none; z-index: 6;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 0.9s steps(4) infinite;
+}
+
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2%, 1%); }
+  50% { transform: translate(1%, -2%); }
+  75% { transform: translate(-1%, -1%); }
+  100% { transform: translate(2%, 2%); }
+}
+
+/* ---------- HUD ---------- */
+
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+#crosshair {
+  position: absolute; left: 50%; top: 50%;
+  width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: rgba(233, 216, 171, 0.9);
+  box-shadow: 0 0 6px rgba(240, 200, 74, 0.8);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+#crosshair.active {
+  transform: scale(1.8);
+  background: var(--gold-bright);
+}
+
+#hover-label {
+  position: absolute; left: 50%; top: calc(50% + 26px);
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 18px rgba(240, 200, 74, 0.35);
+  white-space: nowrap;
+}
+
+#objective {
+  position: absolute; top: 22px; left: 26px;
+  max-width: 330px;
+  padding: 12px 18px 14px;
+  background: linear-gradient(160deg, rgba(20, 14, 8, 0.82), rgba(32, 22, 12, 0.72));
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-left: 3px solid var(--gold);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.objective-title {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+#objective-text { font-size: 1.05rem; line-height: 1.35; font-style: italic; }
+
+#timer {
+  position: absolute; top: 22px; right: 26px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: 0.12em;
+  color: var(--parchment);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  padding: 6px 16px;
+  background: rgba(20, 14, 8, 0.6);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+}
+
+#toast {
+  position: absolute; left: 50%; bottom: 132px;
+  transform: translateX(-50%) translateY(8px);
+  max-width: 560px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--parchment);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 0 30px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- Inventar ---------- */
+
+#inventory {
+  position: absolute; left: 50%; bottom: 26px;
+  transform: translateX(-50%);
+  display: flex; gap: 12px;
+}
+
+.slot {
+  width: 58px; height: 58px;
+  display: grid; place-items: center;
+  font-size: 1.7rem;
+  color: rgba(233, 216, 171, 0.18);
+  background: linear-gradient(160deg, rgba(20, 14, 8, 0.75), rgba(32, 22, 12, 0.6));
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.slot.filled {
+  color: var(--gold-bright);
+  border-color: var(--gold);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 18px rgba(240, 200, 74, 0.35);
+  animation: slot-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.slot.used { color: rgba(240, 200, 74, 0.25); box-shadow: inset 0 2px 8px rgba(0,0,0,0.6); }
+
+@keyframes slot-pop {
+  0% { transform: scale(0.6); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Lesepanel ---------- */
+
+#reading {
+  position: fixed; inset: 0; z-index: 20;
+  display: grid; place-items: center;
+  background: rgba(5, 3, 12, 0.55);
+}
+
+.parchment {
+  max-width: 520px;
+  margin: 20px;
+  padding: 44px 48px 30px;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 248, 220, 0.55), transparent 60%),
+    linear-gradient(165deg, var(--parchment) 0%, var(--parchment-dark) 100%);
+  border: 1px solid #a8915e;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), inset 0 0 60px rgba(150, 120, 60, 0.25);
+  clip-path: polygon(1% 2%, 99% 0%, 100% 97%, 2% 100%);
+}
+
+.parchment h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.9rem;
+  margin-bottom: 14px;
+  color: #4a2c12;
+}
+
+.parchment #reading-body { font-size: 1.2rem; line-height: 1.55; font-style: italic; }
+.parchment #reading-body p { margin-bottom: 10px; }
+
+.reading-hint {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.55;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Vollbild-Schirme ---------- */
+
+#title-screen, #pause-screen, #win-screen {
+  position: fixed; inset: 0; z-index: 30;
+  display: grid; place-items: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(226, 114, 47, 0.16), transparent 55%),
+    radial-gradient(ellipse at 50% 30%, var(--indigo-soft), var(--indigo) 75%);
+}
+
+#pause-screen { background: rgba(8, 5, 18, 0.82); }
+
+.title-inner { max-width: 620px; padding: 24px; animation: rise 0.9s ease both; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.title-kicker {
+  font-size: 1rem; font-style: italic;
+  letter-spacing: 0.18em;
+  color: rgba(233, 216, 171, 0.6);
+  margin-bottom: 6px;
+}
+
+#title-screen h1, #win-screen h1, #pause-screen h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(4rem, 13vw, 7.5rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  color: var(--gold-bright);
+  text-shadow:
+    0 0 40px rgba(240, 200, 74, 0.35),
+    0 4px 0 #6b4e0e,
+    0 8px 24px rgba(0, 0, 0, 0.8);
+}
+
+h1.small { font-size: clamp(2.6rem, 7vw, 4rem); }
+
+.title-sub {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.45rem;
+  letter-spacing: 0.14em;
+  margin: 10px 0 22px;
+  color: var(--parchment);
+}
+
+.title-story {
+  font-size: 1.15rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: rgba(233, 216, 171, 0.82);
+  margin-bottom: 30px;
+}
+
+#win-time {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 3.4rem;
+  color: var(--parchment);
+  margin: -8px 0 22px;
+  text-shadow: 0 0 30px rgba(240, 200, 74, 0.3);
+}
+
+button {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--gold-bright), var(--gold) 60%, #9a7a1c);
+  border: none;
+  padding: 14px 44px;
+  cursor: pointer;
+  clip-path: polygon(3% 8%, 97% 0%, 100% 88%, 1% 100%);
+  box-shadow: 0 6px 30px rgba(240, 200, 74, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-2px) rotate(-0.5deg);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 40px rgba(240, 200, 74, 0.4);
+}
+
+button:active { transform: translateY(1px); }
+
+.title-controls {
+  margin-top: 26px;
+  font-size: 1rem;
+  color: rgba(233, 216, 171, 0.65);
+}
+
+.title-controls b { color: var(--gold-bright); font-weight: 400; }
+
+.title-note { margin-top: 6px; font-size: 0.85rem; font-style: italic; color: rgba(233, 216, 171, 0.35); }
