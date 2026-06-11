@@ -477,7 +477,7 @@ let chest, chestLid;
 
   register(chest, 'Schatulle öffnen', (entry) => {
     if (!state.candlesSolved) {
-      toast('Verschlossen. Vier kalte Kerzen wachen darüber — vielleicht wollen sie zuerst brennen.');
+      toast('Verschlossen. Noch.');
       sound.thud();
       return;
     }
@@ -618,10 +618,10 @@ let doorPivot, sealRing, sealLight;
   register(doorPivot, 'Tür', () => {
     if (state.doorOpen) return;
     if (!state.sealBroken) {
-      toast('Die Tür ist magisch versiegelt. Drei leere Sockel starren dich erwartungsvoll an.');
+      toast('Die Tür ist magisch versiegelt.');
       sound.thud();
     } else if (!state.hasKey) {
-      toast('Das Siegel ist gebrochen, doch das Schloss hält. Ein Schlüsselloch glimmt golden.');
+      toast('Das Siegel ist gebrochen, doch das Schloss hält noch.');
       sound.thud();
     } else {
       openDoor();
@@ -661,7 +661,7 @@ function collectRune(key, entry, mesh) {
 function placeRune(ped) {
   if (ped.filled) return;
   if (state.runes.length === 0) {
-    toast('Der Sockel hat eine runde Mulde — hier fehlt eine Rune.');
+    toast('Eine runde Mulde — leer.');
     sound.thud();
     return;
   }
@@ -690,7 +690,7 @@ function placeRune(ped) {
       onDone: () => { sealRing.visible = false; sealRing.userData.inner.visible = false; }
     });
   } else {
-    toast(`Die Rune rastet ein. (${state.runesPlaced}/3)`);
+    toast('Die Rune rastet ein.');
   }
   updateObjective();
 }
@@ -721,7 +721,7 @@ function lightCandle(key) {
         candles[k].light.intensity = 0;
       }
       state.candleProgress = 0;
-      toast('Ein kalter Windhauch — alle Flammen erlöschen zischend. Die Reihenfolge war falsch.');
+      toast('Ein kalter Windhauch — alle Flammen erlöschen zischend.');
       sound.thud();
     }, 600);
   }
@@ -744,11 +744,11 @@ function openDoor() {
 // ---------- Aufgaben-Text ----------
 
 const OBJECTIVES = [
-  'Sieh dich um. Irgendetwas hier verrät den Ausweg.',
-  'Das Buch erwähnt Kerzen, Runen und eine Schatulle. Such die Kammer ab.',
-  'Sammle die drei Runensteine und setze sie auf die Sockel.',
-  'Entzünde die vier Kerzen in der Reihenfolge aus dem Zauberbuch.',
-  'Nimm den Messingschlüssel und öffne die Tür.',
+  'Du bist eingeschlossen. Finde selbst einen Weg hinaus.',
+  'Überall liegen Spuren alter Zauberei. Sieh genauer hin.',
+  'Diese Tür verlangt nach mehr als nur einem beherzten Griff.',
+  'Die Tür gibt langsam nach — doch noch hält etwas sie fest.',
+  'Beinahe frei. Ein letzter Widerstand bleibt.',
   'Lauf! Durch den Gang, bevor der Erzmagier zurückkehrt!',
 ];
 

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Arcanum — Entkomme dem Turm des Erzmagiers</title>
-  <meta name="description" content="Ein 3D-Fantasy-Escape-Room im Browser. Löse die Rätsel des Erzmagiers und entkomme seinem Turm." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x1F5DD;</text></svg>" />
+  <title>Arcanum — Die Uhrwerkkammer des Erzmagiers</title>
+  <meta name="description" content="Raum 3 des 3D-Fantasy-Escape-Rooms: Glockenlied, Waage und Astraluhr in einer sechseckigen Uhrwerkkammer." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x2699;</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
@@ -28,40 +28,39 @@
     <div id="hover-label"></div>
     <div id="objective">
       <span class="objective-title">Aufgabe</span>
-      <span id="objective-text">Du bist eingeschlossen. Finde selbst einen Weg hinaus.</span>
+      <span id="objective-text">Eine sechseckige Uhrwerkkammer voller Räder. Sieh dich um.</span>
     </div>
     <div id="timer">00:00</div>
     <div id="toast"></div>
     <div id="inventory">
-      <div class="slot" id="slot-feuer" title="Feuerrune"><span>ᚠ</span></div>
-      <div class="slot" id="slot-mond" title="Mondrune"><span>ᛗ</span></div>
-      <div class="slot" id="slot-stern" title="Sternenrune"><span>ᛏ</span></div>
-      <div class="slot" id="slot-key" title="Messingschlüssel"><span>⚷</span></div>
+      <div class="slot" id="lock-bell" title="Zahnrad des Glockenlieds"><span>♪</span></div>
+      <div class="slot" id="lock-scale" title="Zahnrad der Waage"><span>⚖</span></div>
+      <div class="slot" id="lock-clock" title="Zahnrad der Uhr"><span>⏱</span></div>
     </div>
   </div>
 
-  <!-- Lesepanel (Buch / Hinweise) -->
+  <!-- Lesepanel (Tafeln / Hinweise) -->
   <div id="reading" class="hidden">
     <div class="parchment">
       <h2 id="reading-title"></h2>
       <div id="reading-body"></div>
-      <p class="reading-hint">— klicke, um das Buch zu schließen —</p>
+      <p class="reading-hint">— klicke, um zu schließen —</p>
     </div>
   </div>
 
   <!-- Titelbildschirm -->
   <div id="title-screen">
     <div class="title-inner">
-      <p class="title-kicker">Ein Kammerspiel in einem Zug</p>
-      <h1>Arcanum</h1>
-      <p class="title-sub">Entkomme dem Turm des Erzmagiers</p>
+      <p class="title-kicker">Arcanum · Raum III</p>
+      <h1>Uhrwerkkammer</h1>
+      <p class="title-sub">Der sechseckige Saal des Räderwerks</p>
       <p class="title-story">
-        Der Erzmagier hat dich in seiner Studierkammer eingeschlossen,
-        während er „nur kurz etwas Schwefel holen“ wollte. Das war vor drei Stunden.
-        Die Tür ist versiegelt, die Fenster zu schmal — aber ein Turm voller Magie
-        ist auch ein Turm voller Schlupflöcher.
+        Tickend und mahlend empfängt dich der nächste Saal — sechs Wände aus Messing,
+        überall drehen sich Zahnräder. Ein Glockenspiel, eine alte Waage und eine
+        gewaltige Uhr stehen still und warten. Drei Zahnräder verriegeln das Tor;
+        jedes lauscht auf eine andere Prüfung.
       </p>
-      <button id="start-btn">Die Kammer betreten</button>
+      <button id="start-btn">Die Uhrwerkkammer betreten</button>
       <p class="title-controls"><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Maus</b> umsehen &nbsp;·&nbsp; <b>Klick</b> benutzen</p>
       <p class="title-note">Desktop &amp; Maus empfohlen</p>
     </div>
@@ -71,7 +70,7 @@
   <div id="pause-screen" class="hidden">
     <div class="title-inner">
       <h1 class="small">Innehalten</h1>
-      <p class="title-sub">Die Zeit im Turm läuft weiter …</p>
+      <p class="title-sub">Das Räderwerk dreht sich weiter …</p>
       <button id="resume-btn">Weiter</button>
     </div>
   </div>
@@ -79,13 +78,14 @@
   <!-- Sieg -->
   <div id="win-screen" class="hidden">
     <div class="title-inner">
-      <p class="title-kicker">Die Schwelle ist überschritten</p>
+      <p class="title-kicker">Das dritte Tor ist offen</p>
       <h1>Entkommen</h1>
-      <p class="title-sub">Du bist dem Erzmagier entwischt in</p>
+      <p class="title-sub">Du hast die Uhrwerkkammer bezwungen in</p>
       <p id="win-time">00:00</p>
       <p class="title-story">
-        Hinter dir verklingt das Murren des Turms. Irgendwo oben flucht jemand
-        sehr Altes, sehr Mächtiges — und sucht seinen Messingschlüssel.
+        Die drei Zahnräder greifen ineinander, das Tor mahlt sich auf. Hinter dir
+        verstummt das Ticken — und der Erzmagier, der gerade die Treppe heraufkommt,
+        bleibt verdutzt stehen.
       </p>
       <button id="again-btn">Noch einmal</button>
     </div>
@@ -94,6 +94,6 @@
   <div id="vignette"></div>
   <div id="grain"></div>
 
-  <script type="module" src="main.js"></script>
+  <script type="module" src="room3.js"></script>
 </body>
 </html>

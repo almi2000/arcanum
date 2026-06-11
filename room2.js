@@ -374,8 +374,7 @@ function rotateRing(data) {
       <p>»Wenn der Komet über dem Okulus steht, kommen die Gestirne zur Ruhe — und nur dann gibt das Astrolabium das erste Siegel frei.</p>
       <p><i>Der <b>äußere</b> Ring weise auf die <b>KRONE</b>,<br>
       der <b>mittlere</b> Ring auf die <b>SONNE</b>,<br>
-      der <b>innere</b> Ring auf das <b>AUGE</b>.</i></p>
-      <p>Dreht jeden Ring, bis sein Edelstein grün glüht.«</p>
+      der <b>innere</b> Ring auf das <b>AUGE</b>.«</i></p>
     `);
     if (state.objectivePhase < 1) setObjective(1);
   });
@@ -504,9 +503,8 @@ function rotateMirror(data) {
   register(panel, 'Wandfresko betrachten', () => {
     openReading('Das Fresko vom wandernden Licht', `
       <p>»Das Mondlicht ist scheu und gehorcht nur den richtig gestellten Spiegeln.</p>
-      <p><i>Dreh jeden der drei Spiegel, bis sein Rahmen golden-grün erglüht —
-      dann reichen sie das Licht einander zu, bis es das Tor erreicht.«</i></p>
-      <p>Unten, in verblasster Schrift: <i>Drei Spiegel, drei Wendungen. Das Auge erkennt, wann jeder still steht.</i></p>
+      <p><i>Findest du für jeden Spiegel die rechte Wendung, reichen sie das Licht
+      einander zu — bis es das Tor erreicht.«</i></p>
     `);
     if (state.objectivePhase < 2 && state.astroSolved) setObjective(2);
   });
@@ -632,10 +630,10 @@ function checkBothSeals() {
   register(doorPivot, 'Tor', () => {
     if (state.doorOpen) return;
     if (!state.astroSolved && !state.lightSolved) {
-      toast('Das Tor trägt zwei kalte Siegel. Beide müssen erwachen, ehe es sich rührt.');
+      toast('Das Tor trägt zwei kalte Siegel.');
       sound.thud();
     } else if (!state.sealBroken) {
-      toast('Ein Siegel glüht bereits — doch erst beide zusammen brechen das Schloss.');
+      toast('Ein Siegel glüht — das andere schweigt noch.');
       sound.thud();
     } else {
       openDoor();
@@ -659,10 +657,10 @@ function openDoor() {
 // ---------- Aufgaben-Text ----------
 
 const OBJECTIVES = [
-  'Ein fremder Raum voller Sterne. Untersuche die Sternwarte.',
-  'Lies die Sternenkarte und stelle das Astrolabium richtig ein.',
-  'Lenke das Mondlicht über die drei Spiegel zum Tor.',
-  'Beide Siegel brennen. Öffne das Tor.',
+  'Ein fremder Saal voller Sterne. Sieh dich um.',
+  'Hier ruht alte Mechanik — sie wartet auf die rechte Stellung.',
+  'Ein Siegel glüht bereits. Etwas anderes liegt noch im Dunkeln.',
+  'Beide Siegel brennen. Das Tor regt sich.',
   'Hinaus! Weiter durch den Gang.',
 ];
 
