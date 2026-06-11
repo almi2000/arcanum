@@ -69,7 +69,7 @@ function drawTextMesh(text, { color = '#e9d8ab', size = 64, bg = null, w = 0.5, 
   const ctx = c.getContext('2d');
   const tex = new THREE.CanvasTexture(c);
   tex.anisotropy = 4;
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
   mesh.userData.redraw = (txt) => {
     ctx.clearRect(0, 0, c.width, c.height);
     if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, c.width, c.height); }
@@ -364,17 +364,22 @@ const pipeWheels = [];
     const drum = new THREE.Group();
     drum.position.set(wx, 1.28, 0.4);
     drum.rotation.x = -0.5;
-    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.18, 16), toon(0xc9a227));
-    ring.rotation.z = Math.PI / 2;
-    drum.add(ring);
-    const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.17, h: 0.17 });
+    
+    // Würfel statt Zylinder als Walze
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), toon(0xc9a227));
+    cube.rotation.z = Math.PI / 2;
+    drum.add(cube);
+    
+    // Ziffer auf Würfel-Vorderseite
+    const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.19, h: 0.19 });
     digit.position.set(0, 0, 0.095);
+    digit.rotation.x = 0.5;
     drum.add(digit);
     console0.add(drum);
 
-    const data = { value: 0, digit, ring };
+    const data = { value: 0, digit, cube };
     pipeWheels.push(data);
-    register(ring, 'Ventil-Walze drehen', () => bumpPipe(data));
+    register(drum, 'Ventil-Walze drehen', () => bumpPipe(data));
   }
   scene.add(console0);
   block(-HALF_X + 0.7, 6.6, 0.9);
@@ -387,7 +392,7 @@ function bumpPipe(data) {
   sound.tick();
   if (pipeWheels.every((w, i) => w.value === PIPE_CODE[i])) {
     state.pipesSolved = true;
-    pipeWheels.forEach((w) => w.ring.material.color.setHex(0x52d273));
+    pipeWheels.forEach((w) => w.cube.material.color.setHex(0x52d273));
     fillLock('pipes');
     toast('Tief in der Halle öffnet sich ein Ventil — Dampf strömt durch die Leitung.');
     sound.success();
@@ -659,16 +664,21 @@ const numberWheels = [];
     const drum = new THREE.Group();
     drum.position.set(wx, 1.22, 0.36);
     drum.rotation.x = -0.5;
-    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.18, 16), toon(0xc9a227));
-    ring.rotation.z = Math.PI / 2;
-    drum.add(ring);
-    const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.18, h: 0.18 });
+    
+    // Würfel statt Zylinder als Walze
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), toon(0xc9a227));
+    cube.rotation.z = Math.PI / 2;
+    drum.add(cube);
+    
+    // Ziffer auf Würfel-Vorderseite
+    const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.19, h: 0.19 });
     digit.position.set(0, 0, 0.095);
+    digit.rotation.x = 0.5;
     drum.add(digit);
     pad.add(drum);
-    const data = { value: 0, digit, ring };
+    const data = { value: 0, digit, cube };
     numberWheels.push(data);
-    register(ring, 'Zahlenrad drehen', () => bumpNumber(data));
+    register(drum, 'Zahlenrad drehen', () => bumpNumber(data));
   }
   scene.add(pad);
   block(-HALF_X + 0.9, -6.0, 0.8);
@@ -681,7 +691,7 @@ function bumpNumber(data) {
   sound.tick();
   if (numberWheels.every((w, i) => w.value === NUMBER_CODE[i])) {
     state.numbersSolved = true;
-    numberWheels.forEach((w) => w.ring.material.color.setHex(0x52d273));
+    numberWheels.forEach((w) => w.cube.material.color.setHex(0x52d273));
     fillLock('numbers');
     toast('Das Zahlenschloss springt auf.');
     sound.success();
