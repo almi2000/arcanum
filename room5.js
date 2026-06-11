@@ -996,16 +996,33 @@ const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
 const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
+const shouldAutoStart = new URLSearchParams(window.location.search).get('autostart') === '1';
 
-document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); controls.lock(); });
-document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
-document.getElementById('again-btn').addEventListener('click', () => location.reload());
-
-controls.addEventListener('lock', () => {
+function enterRoom() {
   titleScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
   hud.classList.remove('hidden');
   if (!state.startTime) state.startTime = performance.now();
+}
+
+document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); controls.lock(); });
+document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
+document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
+
+if (shouldAutoStart) {
+  enterRoom();
+  const lockOnInput = () => {
+    sound.unlock();
+    controls.lock();
+    document.removeEventListener('click', lockOnInput);
+    document.removeEventListener('keydown', lockOnInput);
+  };
+  document.addEventListener('click', lockOnInput);
+  document.addEventListener('keydown', lockOnInput);
+}
+
+controls.addEventListener('lock', () => {
+  enterRoom();
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;

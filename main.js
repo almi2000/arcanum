@@ -836,13 +836,14 @@ const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
 const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
+const nextRoomUrl = 'room2.html?autostart=1';
 
 document.getElementById('start-btn').addEventListener('click', () => {
   sound.unlock();
   controls.lock();
 });
 document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
-document.getElementById('again-btn').addEventListener('click', () => location.reload());
+document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room2.html'; });
 
 controls.addEventListener('lock', () => {
   titleScreen.classList.add('hidden');
@@ -933,14 +934,9 @@ function move(dt) {
 
 function win() {
   state.escaped = true;
-  const secs = Math.floor((performance.now() - state.startTime) / 1000);
-  const mm = String(Math.floor(secs / 60)).padStart(2, '0');
-  const ss = String(secs % 60).padStart(2, '0');
-  document.getElementById('win-time').textContent = `${mm}:${ss}`;
-  hud.classList.add('hidden');
-  winScreen.classList.remove('hidden');
   controls.unlock();
   sound.success();
+  window.location.href = nextRoomUrl;
 }
 
 // ---------- Hauptschleife ----------
