@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcanum — Die Dampfhalle des Erzmagiers</title>
+  <meta name="description" content="Raum 5 des 3D-Fantasy-Escape-Rooms: Rohrleitungs-Ventile, Magnettafel, Hebel-Logik, Schrank-Nummern und ein Schattenrätsel in einer dampfenden Maschinenhalle." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x2699;</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="crosshair"></div>
+    <div id="hover-label"></div>
+    <div id="objective">
+      <span class="objective-title">Aufgabe</span>
+      <span id="objective-text">Eine dampfende Maschinenhalle. Der Reaktor versperrt den Ausgang.</span>
+    </div>
+    <div id="timer">00:00</div>
+    <div id="toast"></div>
+    <div id="inventory">
+      <div class="slot" id="lock-pipes" title="Dampfleitung"><span>Ⅰ</span></div>
+      <div class="slot" id="lock-magnet" title="Magnettafel"><span>Ⅱ</span></div>
+      <div class="slot" id="lock-lever" title="Der richtige Hebel"><span>Ⅲ</span></div>
+      <div class="slot" id="lock-numbers" title="Schrank-Nummern"><span>Ⅳ</span></div>
+      <div class="slot" id="lock-shadow" title="Das Schattenbild"><span>Ⅴ</span></div>
+    </div>
+  </div>
+
+  <!-- Lesepanel (Tafeln / Schilder) -->
+  <div id="reading" class="hidden">
+    <div class="parchment">
+      <h2 id="reading-title"></h2>
+      <div id="reading-body"></div>
+      <p class="reading-hint">— klicke, um zu schließen —</p>
+    </div>
+  </div>
+
+  <!-- Titelbildschirm -->
+  <div id="title-screen">
+    <div class="title-inner">
+      <p class="title-kicker">Arcanum · Raum V</p>
+      <h1 class="small">Die Dampfhalle</h1>
+      <p class="title-sub">Der Kesselsaal des Erzmagiers</p>
+      <p class="title-story">
+        Hinter der leeren Kammer öffnet sich eine gewaltige Halle aus Messing und Eisen.
+        Rohre zischen, ein riesiger Reaktor pocht im Takt eines schlafenden Herzens, und
+        an den Wänden hängen Ventilpläne, Warnschilder und eine Tafel voller Symbole.
+        Der einzige Weg hinaus führt durch das Reaktortor — und das öffnet nur, wer die
+        Maschine versteht.
+      </p>
+      <button id="start-btn">Die Halle betreten</button>
+      <p class="title-controls"><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Maus</b> umsehen &nbsp;·&nbsp; <b>Klick</b> benutzen</p>
+      <p class="title-note">Desktop &amp; Maus empfohlen</p>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause-screen" class="hidden">
+    <div class="title-inner">
+      <h1 class="small">Innehalten</h1>
+      <p class="title-sub">Der Dampf zischt leise weiter …</p>
+      <button id="resume-btn">Weiter</button>
+    </div>
+  </div>
+
+  <!-- Sieg -->
+  <div id="win-screen" class="hidden">
+    <div class="title-inner">
+      <p class="title-kicker">Das Reaktortor stand offen</p>
+      <h1>Entkommen</h1>
+      <p class="title-sub">Du hast die Dampfhalle bezwungen in</p>
+      <p id="win-time">00:00</p>
+      <p class="title-story">
+        Mit einem letzten, mächtigen Stoß weißen Dampfes gibt der Reaktor den Weg frei.
+        Du trittst hindurch ins kühle Freie — und hinter dir verstummt das eiserne Herz
+        des Erzmagiers für immer.
+      </p>
+      <button id="again-btn">Noch einmal</button>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <script type="module" src="room5.js"></script>
+</body>
+</html>
