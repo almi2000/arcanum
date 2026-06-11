@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcanum — Räume (Test-Auswahl)</title>
+  <meta name="description" content="Wähle einen Raum des Arcanum-Escape-Rooms zum Testen." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x1F3F0;</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!--
+    Test-Hub: Jeder Raum wird einzeln geladen (eigene HTML + JS).
+    Für ein späteres Gesamtspiel kann hier ein Loader die Räume nacheinander
+    starten, sobald der jeweils vorige durch die Tür verlassen wurde.
+  -->
+  <div id="room-hub">
+    <div class="hub-inner">
+      <p class="title-kicker">Ein Kammerspiel in mehreren Zügen</p>
+      <h1>Arcanum</h1>
+      <p class="title-sub">Wähle einen Raum zum Testen</p>
+
+      <div class="hub-cards">
+        <a class="hub-card" href="index.html">
+          <span class="hub-num">Raum I</span>
+          <h2>Studierkammer</h2>
+          <p>Die Kammer des Erzmagiers — entzünde die Kerzen, finde die Runen, öffne die versiegelte Tür.</p>
+          <p class="hub-puzzles">Rätsel: Runensockel · Kerzenreihenfolge · Schatulle &amp; Schlüssel</p>
+        </a>
+
+        <a class="hub-card" href="room2.html">
+          <span class="hub-num">Raum II</span>
+          <h2>Observatorium</h2>
+          <p>Der Sternensaal — richte das Astrolabium aus und lenke das Mondlicht über die Spiegel zum Tor.</p>
+          <p class="hub-puzzles">Rätsel: Astrolabium · Mondpfad (Spiegel)</p>
+        </a>
+      </div>
+
+      <p class="title-note">Tipp: Jeder Raum ist eigenständig spielbar — später lassen sie sich zu einem durchgehenden Spiel verbinden.</p>
+    </div>
+  </div>
+</body>
+</html>

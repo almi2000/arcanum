@@ -304,3 +304,52 @@ button:active { transform: translateY(1px); }
 .title-controls b { color: var(--gold-bright); font-weight: 400; }
 
 .title-note { margin-top: 6px; font-size: 0.85rem; font-style: italic; color: rgba(233, 216, 171, 0.35); }
+
+/* ---------- Raum-Auswahl (Test-Hub) ---------- */
+
+#room-hub {
+  position: fixed; inset: 0; z-index: 30; overflow: auto;
+  display: grid; place-items: center;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(226, 114, 47, 0.16), transparent 55%),
+    radial-gradient(ellipse at 50% 30%, var(--indigo-soft), var(--indigo) 75%);
+}
+
+.hub-inner { max-width: 760px; padding: 40px 24px; text-align: center; animation: rise 0.9s ease both; }
+
+.hub-cards {
+  display: flex; flex-wrap: wrap; gap: 22px; justify-content: center;
+  margin-top: 30px;
+}
+
+.hub-card {
+  display: block; width: 300px; text-decoration: none;
+  padding: 22px 24px 24px;
+  text-align: left;
+  color: var(--parchment);
+  background: linear-gradient(160deg, rgba(20, 14, 8, 0.82), rgba(32, 22, 12, 0.7));
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  border-left: 3px solid var(--gold);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.hub-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold-bright);
+  box-shadow: 0 12px 40px rgba(240, 200, 74, 0.25);
+}
+
+.hub-card .hub-num {
+  font-family: var(--font-display); font-weight: 800; font-size: 0.85rem;
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold);
+}
+
+.hub-card h2 {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.9rem;
+  color: var(--gold-bright); margin: 4px 0 8px; line-height: 1;
+}
+
+.hub-card p { font-size: 1.02rem; font-style: italic; line-height: 1.4; color: rgba(233, 216, 171, 0.8); }
+
+.hub-card .hub-puzzles { margin-top: 10px; font-size: 0.92rem; color: rgba(233, 216, 171, 0.6); }

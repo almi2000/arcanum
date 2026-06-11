@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcanum — Das Observatorium des Erzmagiers</title>
+  <meta name="description" content="Raum 2 des 3D-Fantasy-Escape-Rooms: Löse Astrolabium und Mondpfad und entkomme dem Observatorium." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x1F52D;</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="crosshair"></div>
+    <div id="hover-label"></div>
+    <div id="objective">
+      <span class="objective-title">Aufgabe</span>
+      <span id="objective-text">Ein fremder Raum voller Sterne. Untersuche die Sternwarte.</span>
+    </div>
+    <div id="timer">00:00</div>
+    <div id="toast"></div>
+    <div id="inventory">
+      <div class="slot" id="seal-astro" title="Siegel des Astrolabiums"><span>✦</span></div>
+      <div class="slot" id="seal-light" title="Siegel des Mondlichts"><span>☾</span></div>
+    </div>
+  </div>
+
+  <!-- Lesepanel (Karte / Fresko) -->
+  <div id="reading" class="hidden">
+    <div class="parchment">
+      <h2 id="reading-title"></h2>
+      <div id="reading-body"></div>
+      <p class="reading-hint">— klicke, um zu schließen —</p>
+    </div>
+  </div>
+
+  <!-- Titelbildschirm -->
+  <div id="title-screen">
+    <div class="title-inner">
+      <p class="title-kicker">Arcanum · Raum II</p>
+      <h1>Observatorium</h1>
+      <p class="title-sub">Der Sternensaal des Erzmagiers</p>
+      <p class="title-story">
+        Hinter der ersten Tür wartete kein Ausgang, sondern ein hoher Kuppelsaal,
+        durch dessen Okulus der Mond hereinscheint. In der Mitte ruht ein Astrolabium,
+        an den Wänden lauern uralte Spiegel — und ein zweites, doppelt versiegeltes Tor.
+      </p>
+      <button id="start-btn">Den Sternensaal betreten</button>
+      <p class="title-controls"><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Maus</b> umsehen &nbsp;·&nbsp; <b>Klick</b> benutzen</p>
+      <p class="title-note">Desktop &amp; Maus empfohlen</p>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause-screen" class="hidden">
+    <div class="title-inner">
+      <h1 class="small">Innehalten</h1>
+      <p class="title-sub">Die Sterne ziehen weiter …</p>
+      <button id="resume-btn">Weiter</button>
+    </div>
+  </div>
+
+  <!-- Sieg -->
+  <div id="win-screen" class="hidden">
+    <div class="title-inner">
+      <p class="title-kicker">Das zweite Tor ist offen</p>
+      <h1>Entkommen</h1>
+      <p class="title-sub">Du hast das Observatorium gemeistert in</p>
+      <p id="win-time">00:00</p>
+      <p class="title-story">
+        Der Mondstrahl erlischt hinter dir, das Astrolabium dreht sich langsam aus.
+        Vor dir öffnet sich der nächste Gang des Turms — und irgendwo darüber
+        flucht der Erzmagier ein zweites Mal.
+      </p>
+      <button id="again-btn">Noch einmal</button>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <script type="module" src="room2.js"></script>
+</body>
+</html>
