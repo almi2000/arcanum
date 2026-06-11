@@ -280,9 +280,7 @@ const astroRings = [];
   const markRadius = 1.05;
   for (let i = 0; i < 6; i++) {
     const ang = i * (Math.PI / 3); // Marke i bei +Z gedreht um i*60°
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: 0xc9a227 }));
-    dot.position.set(Math.sin(ang) * markRadius, 1.16, Math.cos(ang) * markRadius);
-    console3d.add(dot);
+    // Goldene Punkte entfernt - Labels sind jetzt sichtbar
     const label = makeLabel(MARK_NAMES[i]);
     label.rotation.x = -Math.PI / 2;
     label.position.set(Math.sin(ang) * (markRadius - 0.02), 1.15, Math.cos(ang) * (markRadius - 0.02));
@@ -335,11 +333,10 @@ function rotateRing(data) {
   sound.place();
 
   data.correct = data.index === data.target;
-  data.gem.material.color.setHex(data.correct ? 0x52d273 : 0xb05aff);
+  // Keine Farb-Rückmeldung - Spieler müssen selbst überprüfen
 
   if (astroRings.every((r) => r.correct)) {
     state.astroSolved = true;
-    astroRings.forEach((r) => { r.gem.material.color.setHex(0x52d273); });
     fillSeal('astro');
     toast('Die Ringe rasten ein — über dir gleiten Sterne in eine alte Konstellation. Ein Siegel am Tor erwacht.');
     sound.success();
@@ -424,6 +421,7 @@ function makeMirror(idx, x, z) {
   // Drehbarer Spiegelkopf
   const head = new THREE.Group();
   head.position.y = 2.0;
+  head.rotation.y = -Math.PI / 2;  // 90° nach links
   const frame = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 24), toon(0xc9a227, { emissive: 0x000000 }));
   head.add(frame);
   const glass = new THREE.Mesh(new THREE.CircleGeometry(0.38, 24), new THREE.MeshBasicMaterial({ color: 0x9fb8e8 }));
@@ -471,8 +469,7 @@ function rotateMirror(data) {
   sound.place();
 
   data.correct = data.state === data.target;
-  data.frame.material.emissive.setHex(data.correct ? 0x52d273 : 0x000000);
-  data.glass.material.color.setHex(data.correct ? 0xbfe8c8 : 0x9fb8e8);
+  // Keine Farb-Rückmeldung - Spieler müssen selbst überprüfen
 
   if (mirrors.every((m) => m.correct)) {
     state.lightSolved = true;
