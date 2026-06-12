@@ -55,23 +55,100 @@ function toon(color, opts = {}) {
   return new THREE.MeshToonMaterial({ color, gradientMap, ...opts });
 }
 
-// Kleine Text-Beschriftung als Canvas-Textur (für die Astrolabium-Marken)
-function makeLabel(text, color = '#e9d8ab') {
+// Klare Canvas-Piktogramme fuer die Astrolabium-Marken.
+function makeLabel(text, color = '#f4ddb0') {
   const c = document.createElement('canvas');
-  c.width = 256; c.height = 96;
+  c.width = 256; c.height = 256;
   const g = c.getContext('2d');
   g.clearRect(0, 0, c.width, c.height);
-  g.font = '700 54px "Grenze Gotisch", serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
+
+  const cx = c.width / 2;
+  const cy = c.height / 2;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.fillStyle = 'rgba(18, 16, 36, 0.92)';
+  g.strokeStyle = 'rgba(244, 221, 176, 0.95)';
+  g.lineWidth = 10;
+  g.beginPath();
+  g.arc(cx, cy, 102, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+
   g.fillStyle = color;
-  g.shadowColor = 'rgba(0,0,0,0.8)';
-  g.shadowBlur = 8;
-  g.fillText(text, c.width / 2, c.height / 2);
+  g.strokeStyle = color;
+  g.lineWidth = 12;
+
+  if (text === '✦') {
+    g.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const radius = i % 2 === 0 ? 74 : 26;
+      const angle = -Math.PI / 2 + i * Math.PI / 4;
+      const x = cx + Math.cos(angle) * radius;
+      const y = cy + Math.sin(angle) * radius;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.closePath();
+    g.fill();
+  } else if (text === '☾') {
+    g.beginPath();
+    g.arc(cx - 8, cy, 64, Math.PI * 0.2, Math.PI * 1.8);
+    g.arc(cx + 22, cy, 56, Math.PI * 1.75, Math.PI * 0.25, true);
+    g.closePath();
+    g.fill();
+  } else if (text === '☉') {
+    for (let i = 0; i < 12; i++) {
+      const angle = i * Math.PI / 6;
+      g.beginPath();
+      g.moveTo(cx + Math.cos(angle) * 54, cy + Math.sin(angle) * 54);
+      g.lineTo(cx + Math.cos(angle) * 78, cy + Math.sin(angle) * 78);
+      g.stroke();
+    }
+    g.beginPath();
+    g.arc(cx, cy, 42, 0, Math.PI * 2);
+    g.stroke();
+    g.beginPath();
+    g.arc(cx, cy, 11, 0, Math.PI * 2);
+    g.fill();
+  } else if (text === '♜') {
+    g.fillRect(cx - 42, cy - 46, 84, 94);
+    g.fillRect(cx - 58, cy + 42, 116, 20);
+    g.clearRect(cx - 28, cy - 46, 14, 26);
+    g.clearRect(cx - 7, cy - 46, 14, 26);
+    g.clearRect(cx + 14, cy - 46, 14, 26);
+  } else if (text === '♛') {
+    g.beginPath();
+    g.moveTo(cx - 70, cy + 46);
+    g.lineTo(cx - 56, cy - 36);
+    g.lineTo(cx - 22, cy + 10);
+    g.lineTo(cx, cy - 58);
+    g.lineTo(cx + 22, cy + 10);
+    g.lineTo(cx + 56, cy - 36);
+    g.lineTo(cx + 70, cy + 46);
+    g.closePath();
+    g.fill();
+    g.fillRect(cx - 70, cy + 48, 140, 22);
+  } else if (text === '◉') {
+    g.beginPath();
+    g.ellipse(cx, cy, 78, 44, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.beginPath();
+    g.arc(cx, cy, 28, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#141225';
+    g.beginPath();
+    g.arc(cx, cy, 10, 0, Math.PI * 2);
+    g.fill();
+  } else {
+    g.font = '800 110px "Grenze Gotisch", serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, cx, cy + 4);
+  }
+
   const tex = new THREE.CanvasTexture(c);
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.52, 0.2),
+    new THREE.PlaneGeometry(0.34, 0.34),
     new THREE.MeshBasicMaterial({ map: tex, transparent: true })
   );
   return mesh;
@@ -316,7 +393,7 @@ const astroRings = [];
     // Goldene Punkte entfernt - Labels sind jetzt sichtbar
     const label = makeLabel(MARK_NAMES[i]);
     label.rotation.x = -Math.PI / 2;
-    label.position.set(Math.sin(ang) * (markRadius - 0.02), 1.15, Math.cos(ang) * (markRadius - 0.02));
+    label.position.set(Math.sin(ang) * (markRadius + 0.02), 1.31, Math.cos(ang) * (markRadius + 0.02));
     console3d.add(label);
   }
 

@@ -872,7 +872,31 @@ function checkAllLocks() {
     toast('Die drei Zahnräder greifen ineinander — das Schloss des Tors mahlt sich auf!');
     sound.success();
     for (const key of Object.keys(gearLocks)) gearLocks[key].gear.userData.gearSpeed = 2.2;
+    releaseGearLocks();
+    openDoor();
     updateProgress();
+  }
+}
+
+function releaseGearLocks() {
+  for (const lock of Object.values(gearLocks)) {
+    const gear = lock.gear;
+    const light = lock.light;
+    const startY = gear.position.y;
+    const startZ = gear.position.z;
+    animations.push({
+      t: 0, dur: 1.0, fn: (k) => {
+        const e = 1 - Math.pow(1 - k, 3);
+        gear.position.y = startY - e * 1.35;
+        gear.position.z = startZ + e * 0.75;
+        gear.scale.setScalar(1 - e * 0.75);
+        light.intensity = 7 * (1 - e);
+      },
+      onDone: () => {
+        gear.visible = false;
+        light.visible = false;
+      },
+    });
   }
 }
 
@@ -951,6 +975,7 @@ function checkAllLocks() {
 }
 
 function openDoor() {
+  if (state.doorOpen) return;
   state.doorOpen = true;
   toast('Das Tor mahlt sich knarrend auf. Der nächste Teil des Turms liegt frei.');
   sound.door();

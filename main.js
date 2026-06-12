@@ -655,7 +655,7 @@ const pedestals = [];
     scene.add(g);
     block(px, pz, 0.65);
 
-    const ped = { group: g, filled: false };
+    const ped = { group: g, filled: false, expectedRune: pedestalRunes[i] };
     pedestals.push(ped);
     register(g, 'Rune einsetzen', () => placeRune(ped));
   }
@@ -790,7 +790,13 @@ function placeRune(ped) {
     sound.thud();
     return;
   }
-  const key = state.runes.shift();
+  const runeIndex = state.runes.indexOf(ped.expectedRune);
+  if (runeIndex < 0) {
+    toast('Die Mulde bleibt kalt. Diese Farbe fehlt dir noch.');
+    sound.thud();
+    return;
+  }
+  const [key] = state.runes.splice(runeIndex, 1);
   ped.filled = true;
   state.runesPlaced++;
   document.getElementById(`slot-${key === 'feuer' ? 'feuer' : key}`).classList.add('used');
