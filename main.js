@@ -233,6 +233,82 @@ function runeStone(runeKey, scale = 1) {
   return g;
 }
 
+function runeGlyph(glyph, color = '#e9d8ab', scale = 1) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '700 84px "Grenze Gotisch", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.shadowColor = 'rgba(0,0,0,0.85)';
+  ctx.shadowBlur = 10;
+  ctx.fillText(glyph, canvas.width / 2, canvas.height / 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 4;
+  const mark = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.24 * scale, 0.24 * scale),
+    new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide })
+  );
+  mark.position.z = 0.18 * scale;
+  return mark;
+}
+
+function fakeRuneStone(glyph, color, scale = 1) {
+  const g = new THREE.Group();
+  const stone = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.16 * scale),
+    new THREE.MeshBasicMaterial({ color })
+  );
+  g.add(stone);
+  g.add(runeGlyph(glyph, '#f3e4b8', scale));
+  const halo = new THREE.PointLight(color, 1.2, 2.2, 2);
+  g.add(halo);
+  g.userData.spin = true;
+  return g;
+}
+
+function makeTrinket(color, scale = 1) {
+  const g = new THREE.Group();
+  const shard = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.13 * scale),
+    new THREE.MeshBasicMaterial({ color })
+  );
+  g.add(shard);
+  const glint = new THREE.PointLight(color, 0.8, 1.8, 2);
+  g.add(glint);
+  g.userData.spin = true;
+  return g;
+}
+
+function makeSmallTable(x, z, rotation, objects) {
+  const table = new THREE.Group();
+  table.position.set(x, 0, z);
+  table.rotation.y = rotation;
+
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 0.9), toon(0x5a3a22));
+  top.position.y = 0.78;
+  table.add(top);
+  for (const [dx, dz] of [[-0.75, -0.32], [0.75, -0.32], [-0.75, 0.32], [0.75, 0.32]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.78, 0.1), toon(0x4a2e1a));
+    leg.position.set(dx, 0.39, dz);
+    table.add(leg);
+  }
+
+  register(table, 'Runentisch', () => toast('Sortierte Steine, alte Fehlversuche, viel Staub.'));
+
+  objects.forEach((obj, i) => {
+    obj.position.set(-0.55 + (i % 3) * 0.55, 0.96, i < 3 ? -0.18 : 0.22);
+    table.add(obj);
+    register(obj, 'Rune', () => toast('Die Rune ist hübsch, aber tot. Kein Summen, kein Gewicht.'));
+  });
+
+  scene.add(table);
+  block(x, z, 1.0);
+}
+
 // --- Schreibtisch mit Zauberbuch ---
 {
   const desk = new THREE.Group();
@@ -272,18 +348,51 @@ function runeStone(runeKey, scale = 1) {
   scene.add(desk);
   block(5.8, 2.8, 1.5);
 
-  register(book, 'Zauberbuch lesen', () => {
-    openReading('Vom Wesen der vier Flammen', `
-      <p>»Wer das Wächterfeuer wecken will, entzünde die Kerzen, wie die Welt entstand:</p>
-      <p><i>Zuerst erwacht die <b>Sonne</b>,<br>
-      dann vergießt das Herz sein <b>Blut</b>,<br>
-      es folgt das tiefe <b>Meer</b>,<br>
-      und zuletzt schweigt der <b>Wald</b>.</i>«</p>
-      <p>Darunter, hastig gekritzelt: <i>Schlüssel wieder in die Schatulle legen!! Nicht vergessen!!</i></p>
+  register(book, 'Aufgeschlagenes Buch', () => {
+    openReading('Vier Flammen', `
+      <p><i>Morgenrot. Herzschlag. Tiefe. Moos.</i></p>
+      <p>Am Rand klebt Wachs in vier Farben. Daneben steht nur: <i>nicht wieder vertauschen.</i></p>
     `);
     if (state.objectivePhase === 0) setObjective(1);
   });
 }
+
+// --- Alchemistischer Kleinkram als plausible Ablenkung ---
+{
+  const clutter = new THREE.Group();
+  clutter.position.set(0.0, 0, 3.2);
+  const colors = [0x7a2230, 0x2e4a6b, 0x3f6b3a, 0x6b3a7a, 0x8c4a2e];
+  for (let i = 0; i < 7; i++) {
+    const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.36, 8), toon(colors[i % colors.length]));
+    bottle.position.set(-0.9 + i * 0.3, 0.18, (i % 2) * 0.28);
+    bottle.rotation.z = (Math.random() - 0.5) * 0.18;
+    clutter.add(bottle);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.18, 8), toon(0xddd0a0));
+    neck.position.set(bottle.position.x, 0.44, bottle.position.z);
+    clutter.add(neck);
+  }
+  const box = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 0.7), toon(0x4a2e1a));
+  box.position.y = 0.08;
+  clutter.add(box);
+  scene.add(clutter);
+  block(0.0, 3.2, 1.1);
+  register(clutter, 'Alchemistenkram', () => toast('Staubige Phiolen. Nichts davon fühlt sich nach Schlüssel an.'));
+}
+
+// --- Zwei Runentische mit nutzlosen Runen ---
+makeSmallTable(-2.2, 0.9, 0.35, [
+  fakeRuneStone('ᚱ', 0xd45a3a, 0.9),
+  fakeRuneStone('ᚾ', 0x61d38b, 0.85),
+  fakeRuneStone('ᛃ', 0x7f74d8, 0.85),
+  fakeRuneStone('ᛉ', 0xd0a248, 0.8),
+]);
+
+makeSmallTable(2.8, -0.9, -0.55, [
+  fakeRuneStone('ᛟ', 0x46c0c8, 0.85),
+  fakeRuneStone('ᚲ', 0xb87ad8, 0.85),
+  fakeRuneStone('ᛇ', 0xd9d2b0, 0.8),
+  fakeRuneStone('ᚦ', 0x9a6a42, 0.85),
+]);
 
 // --- Bücherregal mit Mondrune ---
 {
@@ -319,11 +428,16 @@ function runeStone(runeKey, scale = 1) {
 
   // Mondrune zwischen den Büchern
   const moonRune = runeStone('mond', 0.9);
-  moonRune.position.set(0.4, 2.0, 0.3);
+  moonRune.position.set(0.4, 2.0, 0.18);
   shelf.add(moonRune);
   register(moonRune, 'Mondrune nehmen', (entry) => {
     collectRune('mond', entry, moonRune);
   });
+
+  const dullShard = makeTrinket(0x9a7a4a, 0.8);
+  dullShard.position.set(-0.65, 2.62, 0.2);
+  shelf.add(dullShard);
+  register(dullShard, 'Matter Splitter', () => toast('Nur ein hübscher Glassplitter. Er bleibt stumm.'));
 
   scene.add(shelf);
   block(-6.6, 3.2, 1.7);
@@ -396,6 +510,11 @@ function runeStone(runeKey, scale = 1) {
   starRune.position.set(2.3, 0.45, 5.5);
   scene.add(starRune);
   register(starRune, 'Sternenrune nehmen', (entry) => collectRune('stern', entry, starRune));
+
+  const decoy = makeTrinket(0xb58a2a, 0.85);
+  decoy.position.set(0.9, 1.05, 6.1);
+  scene.add(decoy);
+  register(decoy, 'Bernsteinbrocken', () => toast('Warm, aber leblos. Kein Zeichen flammt darin auf.'));
 }
 
 // --- Kerzentisch (Rätsel 2) ---
@@ -515,17 +634,23 @@ let chest, chestLid;
 const pedestals = [];
 {
   const positions = [[-2.4, -4.6], [0, -5.3], [2.4, -4.6]];
+  const pedestalRunes = ['feuer', 'mond', 'stern'];
   for (let i = 0; i < 3; i++) {
     const [px, pz] = positions[i];
+    const rune = RUNES[pedestalRunes[i]];
     const g = new THREE.Group();
     g.position.set(px, 0, pz);
 
-    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.36, 1.1, 10), toon(0x565b70));
+    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.36, 1.1, 10), toon(rune.color));
     column.position.y = 0.55;
     g.add(column);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.3, 0.14, 10), toon(0x3a3d4d));
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.3, 0.14, 10), toon(rune.color, { emissive: rune.color, emissiveIntensity: 0.15 }));
     cap.position.y = 1.15;
     g.add(cap);
+    const socket = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.035, 8, 20), new THREE.MeshBasicMaterial({ color: rune.color }));
+    socket.rotation.x = Math.PI / 2;
+    socket.position.y = 1.24;
+    g.add(socket);
 
     scene.add(g);
     block(px, pz, 0.65);
@@ -820,7 +945,7 @@ const sound = (() => {
     place() { tone(440, 0.2, 'triangle'); tone(550, 0.3, 'triangle', 0.08, 0.1); },
     flame() { tone(330, 0.12, 'triangle', 0.08); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.1, i * 0.12)); },
+    success() {},
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -831,6 +956,12 @@ const controls = new PointerLockControls(camera, document.body);
 const keys = {};
 document.addEventListener('keydown', (e) => { keys[e.code] = true; });
 document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+const touchMove = { x: 0, z: 0 };
+let touchActive = false;
+let touchYaw = 0;
+let touchPitch = 0;
+const touchEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
@@ -838,21 +969,30 @@ const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
 const nextRoomUrl = 'room2.html?autostart=1';
 
-document.getElementById('start-btn').addEventListener('click', () => {
-  sound.unlock();
-  controls.lock();
-});
-document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
-document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room2.html'; });
-
-controls.addEventListener('lock', () => {
+function enterRoom() {
   titleScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
   hud.classList.remove('hidden');
   if (!state.startTime) state.startTime = performance.now();
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  sound.unlock();
+  if (isTouchDevice) enableTouchPlay();
+  else controls.lock();
+});
+document.getElementById('resume-btn').addEventListener('click', () => {
+  if (isTouchDevice) enableTouchPlay();
+  else controls.lock();
+});
+document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room2.html'; });
+
+controls.addEventListener('lock', () => {
+  enterRoom();
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
+  if (touchActive) return;
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -870,14 +1010,113 @@ function updateHover() {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
-  document.getElementById('crosshair').classList.toggle('active', !!hovered);
+  document.getElementById('hover-label').textContent = '';
+  document.getElementById('crosshair').classList.remove('active');
 }
 
 function interact() {
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
+
+function enableTouchPlay() {
+  touchActive = true;
+  document.body.classList.add('touch-playing');
+  enterRoom();
+}
+
+function setupTouchControls() {
+  if (!isTouchDevice || document.getElementById('mobile-controls')) return;
+  const root = document.createElement('div');
+  root.id = 'mobile-controls';
+  root.innerHTML = '<div id="touch-look-zone"></div><div id="touch-stick"><div id="touch-stick-knob"></div></div><button id="touch-use" type="button">✦</button>';
+  document.body.appendChild(root);
+
+  const stick = root.querySelector('#touch-stick');
+  const knob = root.querySelector('#touch-stick-knob');
+  const lookZone = root.querySelector('#touch-look-zone');
+  const useButton = root.querySelector('#touch-use');
+  let stickId = null;
+  let lookId = null;
+  let lastLookX = 0;
+  let lastLookY = 0;
+
+  function setStick(clientX, clientY) {
+    const rect = stick.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const max = rect.width * 0.34;
+    const len = Math.hypot(dx, dy);
+    const scale = len > max ? max / len : 1;
+    const x = dx * scale;
+    const y = dy * scale;
+    knob.style.transform = `translate(${x}px, ${y}px)`;
+    touchMove.x = THREE.MathUtils.clamp(x / max, -1, 1);
+    touchMove.z = THREE.MathUtils.clamp(-y / max, -1, 1);
+  }
+
+  function resetStick() {
+    stickId = null;
+    touchMove.x = 0;
+    touchMove.z = 0;
+    knob.style.transform = 'translate(0, 0)';
+  }
+
+  stick.addEventListener('touchstart', (event) => {
+    event.preventDefault();
+    enableTouchPlay();
+    const touch = event.changedTouches[0];
+    stickId = touch.identifier;
+    setStick(touch.clientX, touch.clientY);
+  }, { passive: false });
+  stick.addEventListener('touchmove', (event) => {
+    event.preventDefault();
+    for (const touch of event.changedTouches) if (touch.identifier === stickId) setStick(touch.clientX, touch.clientY);
+  }, { passive: false });
+  stick.addEventListener('touchend', (event) => {
+    for (const touch of event.changedTouches) if (touch.identifier === stickId) resetStick();
+  });
+  stick.addEventListener('touchcancel', resetStick);
+
+  lookZone.addEventListener('touchstart', (event) => {
+    event.preventDefault();
+    enableTouchPlay();
+    const touch = event.changedTouches[0];
+    lookId = touch.identifier;
+    lastLookX = touch.clientX;
+    lastLookY = touch.clientY;
+  }, { passive: false });
+  lookZone.addEventListener('touchmove', (event) => {
+    event.preventDefault();
+    for (const touch of event.changedTouches) {
+      if (touch.identifier !== lookId) continue;
+      const dx = touch.clientX - lastLookX;
+      const dy = touch.clientY - lastLookY;
+      lastLookX = touch.clientX;
+      lastLookY = touch.clientY;
+      touchYaw -= dx * 0.0032;
+      touchPitch -= dy * 0.0032;
+      touchPitch = THREE.MathUtils.clamp(touchPitch, -Math.PI / 2 + 0.08, Math.PI / 2 - 0.08);
+      touchEuler.set(touchPitch, touchYaw, 0);
+      camera.quaternion.setFromEuler(touchEuler);
+    }
+  }, { passive: false });
+  lookZone.addEventListener('touchend', (event) => {
+    for (const touch of event.changedTouches) if (touch.identifier === lookId) lookId = null;
+  });
+  lookZone.addEventListener('touchcancel', () => { lookId = null; });
+
+  useButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    enableTouchPlay();
+    updateHover();
+    interact();
+  });
+}
+
+setupTouchControls();
 
 document.addEventListener('mousedown', (e) => {
   if (controls.isLocked && e.button === 0) interact();
@@ -891,8 +1130,8 @@ document.addEventListener('keydown', (e) => {
 const velocity = new THREE.Vector3();
 function move(dt) {
   const speed = 4.2;
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchMove.z, -1, 1);
+  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchMove.x, -1, 1);
   velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
   velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
   controls.moveRight(velocity.x * dt);
@@ -994,7 +1233,7 @@ function animate() {
     if (k >= 1) { a.done = true; if (a.onDone) a.onDone(); }
   }
 
-  if (controls.isLocked && !state.escaped) {
+  if ((controls.isLocked || touchActive) && !state.escaped) {
     move(dt);
     updateHover();
     if (state.startTime) {

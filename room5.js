@@ -21,6 +21,7 @@
 
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { createMobileControls } from './mobileControls.js';
 
 // ---------- Grundgerüst ----------
 
@@ -339,9 +340,7 @@ const pipeWheels = [];
   scene.add(plan);
   register(planFrame, 'Schaltplan studieren', () => {
     openReading('Dampf-Schaltplan', `
-      <p>Eine alte Blaupause. Eine leuchtende Linie zieht sich vom <b>DAMPF</b>-Eingang
-      bis zum <b>REAKTOR</b>; mehrere Leitungen sind rot durchgestrichen — gesperrt.</p>
-      <p><i>»Folge dem Dampf. Die Ventile, an denen er vorbeiströmt, sind dein Schlüssel.«</i></p>
+      <p>Die Blaupause ist voller alter Korrekturen. Nur eine Linie wirkt frisch nachgezogen.</p>
     `);
   });
 
@@ -429,9 +428,7 @@ const magnetSlots = [];
     openReading('Sicherheits-Aushang', `
       <p style="text-align:center;font-size:1.6rem;letter-spacing:.3rem;">
       \u26A0\uFE0F&nbsp; \uD83E\uDD7D&nbsp; \uD83E\uDDE4&nbsp; \uD83D\uDD25&nbsp; \u2757</p>
-      <p><b>Vor dem Betreten des Reaktors:</b></p>
-      <p>1. Warnung beachten<br>2. Augenschutz anlegen<br>3. Handschuhe anziehen<br>
-      4. Feuer fernhalten<br>5. Restgefahr — Vorsicht!</p>
+      <p>Der untere Text ist von Dampf aufgeweicht.</p>
     `);
   });
 
@@ -458,6 +455,36 @@ const magnetSlots = [];
     register(slotBg, 'Magnet versetzen', () => cycleMagnet(data));
   }
   scene.add(board);
+}
+
+// --- Werkzeuge, Anzeigen und tote Ventile als thematischer Lärm ---
+{
+  const toolRack = new THREE.Group();
+  toolRack.position.set(2.5, 0, 6.7);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.16, 0.65), toon(0x4a4f63));
+  base.position.y = 0.75;
+  toolRack.add(base);
+  for (let i = 0; i < 5; i++) {
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8), toon(0x9a9aa6));
+    rod.rotation.z = 0.2 + i * 0.18;
+    rod.position.set(-0.8 + i * 0.4, 1.05, 0);
+    toolRack.add(rod);
+  }
+  scene.add(toolRack);
+  block(2.5, 6.7, 0.9);
+  register(toolRack, 'Werkzeugablage', () => toast('Schlüssel, Zangen, rostige Messfühler. Keiner passt ins Tor.'));
+
+  for (const [x, z, col] of [[-4.4, 0.5, 0xd23a3a], [4.8, 2.2, 0x4a6bff], [-3.9, -7.2, 0xf0c84a]]) {
+    const valve = new THREE.Group();
+    valve.position.set(x, 1.6, z);
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.05, 8, 20), toon(col));
+    wheel.rotation.x = Math.PI / 2;
+    valve.add(wheel);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.35, 8), toon(0x6b7280));
+    valve.add(stem);
+    scene.add(valve);
+    register(wheel, 'Blindes Ventil', () => toast('Es dreht leer durch. Kein Dampf antwortet.'));
+  }
 }
 
 function drawSafetyPoster() {
@@ -516,7 +543,7 @@ const LEVER_DEFS = [
 
 {
   // Meta-Schild über den Hebeln
-  const meta = drawTextMesh('Nur ein Schild sagt die Wahrheit.', { color: '#e9d8ab', size: 30, w: 3.0, h: 0.36 });
+  const meta = drawTextMesh('Nur eines lügt nicht.', { color: '#e9d8ab', size: 30, w: 3.0, h: 0.36 });
   meta.position.set(3.0, 3.5, Z_FRONT - 0.06);
   meta.rotation.y = Math.PI;
   scene.add(meta);
@@ -635,15 +662,15 @@ const numberWheels = [];
     }
     register(door, `Schrank ${String(l.n).padStart(3, '0')}`, () => {
       openReading(`Schrank ${String(l.n).padStart(3, '0')}`, `
-        <p>Verschlossen. Auf dem Schild steht die Nummer <b>${String(l.n).padStart(3, '0')}</b>.</p>
-        ${l.fire ? '<p style="text-align:center;font-size:2.4rem;">\uD83E\uDDEF</p><p>Ein Feuerlöscher-Zeichen klebt darunter.</p>' : '<p>Kein besonderes Zeichen.</p>'}
+        <p>Verschlossen.</p>
+        ${l.fire ? '<p style="text-align:center;font-size:2.4rem;">\uD83E\uDDEF</p>' : '<p>Nur abgeplatzter Lack.</p>'}
       `);
     });
   });
   scene.add(cab);
 
   // Anweisungsschild
-  const instr = drawTextMesh('Addiere die Schr\u00e4nke mit \uD83E\uDDEF', { color: '#e9d8ab', size: 30, w: 2.0, h: 0.34 });
+  const instr = drawTextMesh('\uD83E\uDDEF zählt.', { color: '#e9d8ab', size: 34, w: 1.5, h: 0.34 });
   instr.position.set(-HALF_X + 0.16, 3.4, -3.5);
   instr.rotation.y = Math.PI / 2;
   scene.add(instr);
@@ -916,11 +943,11 @@ function afterPuzzle() {
 
 function objText(s) { document.getElementById('objective-text').textContent = s; }
 function updateProgress() {
-  if (state.doorOpen) { objText('Das Reaktortor steht offen — hindurch ins Freie!'); return; }
-  if (state.shadowReady) { objText('Die Lampe wirft Schatten. Richte sie aus, bis die Zahl klar wird.'); return; }
+  if (state.doorOpen) { objText('Das Reaktortor steht offen.'); return; }
+  if (state.shadowReady) { objText('Die Lampe wirft Schatten.'); return; }
   const n = [state.pipesSolved, state.magnetSolved, state.leverSolved, state.numbersSolved].filter(Boolean).length;
-  if (n > 0) { objText('Die Maschine erwacht Stück für Stück. Bring alle Mechanismen zum Laufen.'); return; }
-  objText('Eine dampfende Maschinenhalle. Untersuche Pläne, Tafeln, Hebel und Schränke.');
+  if (n > 0) { objText('Die Maschine erwacht Stück für Stück.'); return; }
+  objText('Eine dampfende Maschinenhalle.');
 }
 
 // ---------- HUD-Helfer ----------
@@ -990,7 +1017,7 @@ const sound = (() => {
     hiss() { noise(0.6, 0.05); },
     flame() { tone(160, 0.5, 'sawtooth', 0.05); noise(0.4, 0.03); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.1, i * 0.12)); },
+    success() {},
     door() { tone(70, 1.4, 'sawtooth', 0.06); tone(55, 1.6, 'square', 0.05, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.6 + i * 0.15)); },
   };
 })();
@@ -1015,15 +1042,16 @@ function enterRoom() {
   if (!state.startTime) state.startTime = performance.now();
 }
 
-document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); controls.lock(); });
-document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
+document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); if (touchControls.isTouchDevice) touchControls.enable(); else controls.lock(); });
+document.getElementById('resume-btn').addEventListener('click', () => { if (touchControls.isTouchDevice) touchControls.enable(); else controls.lock(); });
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
 
 if (shouldAutoStart) {
   enterRoom();
   const lockOnInput = () => {
     sound.unlock();
-    controls.lock();
+    if (touchControls.isTouchDevice) touchControls.enable();
+    else controls.lock();
     document.removeEventListener('click', lockOnInput);
     document.removeEventListener('keydown', lockOnInput);
   };
@@ -1036,6 +1064,7 @@ controls.addEventListener('lock', () => {
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
+  if (touchControls.isActive()) return;
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -1053,14 +1082,16 @@ function updateHover() {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
-  document.getElementById('crosshair').classList.toggle('active', !!hovered);
+  document.getElementById('hover-label').textContent = '';
+  document.getElementById('crosshair').classList.remove('active');
 }
 
 function interact() {
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
+
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
 
 document.addEventListener('mousedown', (e) => { if (controls.isLocked && e.button === 0) interact(); });
 document.addEventListener('keydown', (e) => { if (controls.isLocked && e.code === 'KeyE') interact(); });
@@ -1070,8 +1101,8 @@ document.addEventListener('keydown', (e) => { if (controls.isLocked && e.code ==
 const velocity = new THREE.Vector3();
 function move(dt) {
   const speed = 4.4;
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
+  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
   velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
   velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
   controls.moveRight(velocity.x * dt);
@@ -1158,7 +1189,7 @@ function animate() {
     if (k >= 1) { a.done = true; if (a.onDone) a.onDone(); }
   }
 
-  if (controls.isLocked && !state.escaped) {
+  if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
     move(dt);
     updateHover();
     if (state.startTime) {

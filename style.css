@@ -22,6 +22,7 @@ html, body {
   font-family: var(--font-body);
   color: var(--parchment);
   user-select: none;
+  touch-action: none;
 }
 
 #scene { position: fixed; inset: 0; display: block; }
@@ -60,15 +61,11 @@ html, body {
   border-radius: 50%;
   background: rgba(233, 216, 171, 0.9);
   box-shadow: 0 0 6px rgba(240, 200, 74, 0.8);
-  transition: transform 0.15s ease, background 0.15s ease;
-}
-
-#crosshair.active {
-  transform: scale(1.8);
-  background: var(--gold-bright);
+  transition: none;
 }
 
 #hover-label {
+  display: none;
   position: absolute; left: 50%; top: calc(50% + 26px);
   transform: translateX(-50%);
   font-family: var(--font-display);
@@ -130,6 +127,53 @@ html, body {
 }
 
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- Mobile Steuerung ---------- */
+
+#mobile-controls {
+  position: fixed; inset: 0; z-index: 14;
+  display: none;
+  pointer-events: none;
+}
+
+.touch-playing #mobile-controls { display: block; }
+
+#touch-stick {
+  position: absolute; left: 28px; bottom: 34px;
+  width: 116px; height: 116px;
+  border-radius: 50%;
+  border: 1px solid rgba(233, 216, 171, 0.28);
+  background: rgba(12, 8, 22, 0.38);
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+#touch-stick-knob {
+  position: absolute; left: 50%; top: 50%;
+  width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: rgba(240, 200, 74, 0.62);
+  box-shadow: 0 0 16px rgba(240, 200, 74, 0.3);
+}
+
+#touch-use {
+  position: absolute; right: 28px; bottom: 42px;
+  width: 78px; height: 78px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(233, 216, 171, 0.35);
+  color: rgba(42, 29, 18, 0.9);
+  background: linear-gradient(170deg, rgba(240, 200, 74, 0.86), rgba(201, 162, 39, 0.78));
+  font-family: var(--font-display);
+  font-size: 2rem;
+  pointer-events: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+#touch-look-zone {
+  position: absolute; inset: 0 0 0 42%;
+  pointer-events: auto;
+}
 
 /* ---------- Inventar ---------- */
 
@@ -202,6 +246,58 @@ html, body {
   font-size: 0.85rem;
   opacity: 0.55;
   letter-spacing: 0.08em;
+}
+
+@media (pointer: coarse) {
+  #objective {
+    top: 12px; left: 12px;
+    max-width: min(300px, calc(100vw - 110px));
+    padding: 9px 12px 10px;
+  }
+
+  .objective-title { font-size: 0.72rem; margin-bottom: 2px; }
+  #objective-text { font-size: 0.92rem; line-height: 1.25; }
+
+  #timer {
+    top: 12px; right: 12px;
+    font-size: 1.05rem;
+    padding: 5px 10px;
+  }
+
+  #toast {
+    bottom: 164px;
+    max-width: calc(100vw - 32px);
+    font-size: 1.05rem;
+  }
+
+  #inventory {
+    bottom: 18px;
+    gap: 8px;
+  }
+
+  .slot {
+    width: 46px; height: 46px;
+    font-size: 1.35rem;
+  }
+
+  .parchment {
+    max-width: calc(100vw - 28px);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding: 30px 28px 22px;
+  }
+
+  .parchment h2 { font-size: 1.55rem; }
+  .parchment #reading-body { font-size: 1.05rem; line-height: 1.42; }
+
+  .title-inner { max-width: min(620px, calc(100vw - 28px)); padding: 18px; }
+  .title-story { font-size: 1rem; line-height: 1.45; margin-bottom: 22px; }
+  .title-controls { font-size: 0.92rem; margin-top: 18px; }
+
+  button {
+    font-size: 1.18rem;
+    padding: 12px 28px;
+  }
 }
 
 /* ---------- Vollbild-Schirme ---------- */

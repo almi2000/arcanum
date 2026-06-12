@@ -19,6 +19,7 @@
 
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { createMobileControls } from './mobileControls.js';
 
 // ---------- Grundger\u00fcst ----------
 
@@ -210,6 +211,11 @@ const PICTURES = {
   ventil:    { emoji: '\uD83D\uDEBF', zahl: 8, name: 'Das Ventil' },
   tuer:      { emoji: '\uD83D\uDEAA', zahl: 4, name: 'Die T\u00fcr' },
 };
+const DECO_PICTURES = {
+  kelch: { emoji: '♕', zahl: 7, name: 'Der Kelch' },
+  feder: { emoji: '✒', zahl: 1, name: 'Die Feder' },
+  auge: { emoji: '◉', zahl: 6, name: 'Das Auge' },
+};
 // Lese-Reihenfolge laut Tafel (NICHT die r\u00e4umliche!): Uhr, Schl\u00fcssel, Ventil, T\u00fcr
 const CODE_ORDER = ['uhr', 'schluessel', 'ventil', 'tuer'];
 const CODE = CODE_ORDER.map((k) => PICTURES[k].zahl); // [5,2,8,4]
@@ -240,8 +246,7 @@ function hangPicture(key, x, z, faceSide) {
   register(frame, `${pic.name} betrachten`, () => {
     openReading(pic.name, `
       <p style="text-align:center;font-size:3rem;margin:6px 0;">${pic.emoji}</p>
-      <p>In der unteren Ecke des Bildes ist eine kleine Ziffer gekritzelt:
-      <b style="font-size:1.6rem;">${pic.zahl}</b></p>
+      <p>Firnis, Kratzer und eine auffällig dunkle Ecke.</p>
     `);
   });
 }
@@ -250,6 +255,29 @@ hangPicture('tuer', -HALF_W + 0.05, 8, -1);
 hangPicture('ventil', HALF_W - 0.05, 4, 1);
 hangPicture('uhr', -HALF_W + 0.05, -1, -1);
 hangPicture('schluessel', HALF_W - 0.05, -6, 1);
+
+function hangDecoyPicture(key, x, z, faceSide) {
+  const pic = DECO_PICTURES[key];
+  const grp = new THREE.Group();
+  grp.position.set(x, 2.3, z);
+  grp.rotation.y = faceSide < 0 ? Math.PI / 2 : -Math.PI / 2;
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.05, 0.08), toon(0x5a4520));
+  grp.add(frame);
+  const canvasPlate = new THREE.Mesh(new THREE.PlaneGeometry(0.74, 0.88), toon(0x20243a));
+  canvasPlate.position.z = 0.05;
+  grp.add(canvasPlate);
+  const icon = drawTextMesh(pic.emoji, { size: 110, w: 0.54, h: 0.54 });
+  icon.position.set(0, 0.12, 0.06);
+  grp.add(icon);
+  const num = drawTextMesh(String(pic.zahl), { color: '#8a805a', size: 36, w: 0.16, h: 0.12 });
+  num.position.set(-0.25, -0.35, 0.06);
+  grp.add(num);
+  scene.add(grp);
+  register(frame, `${pic.name} betrachten`, () => openReading(pic.name, '<p>Ein altes Bild. Es scheint nicht zu der täglichen Runde zu gehören.</p>'));
+}
+hangDecoyPicture('kelch', HALF_W - 0.05, 7.0, 1);
+hangDecoyPicture('feder', -HALF_W + 0.05, 3.0, -1);
+hangDecoyPicture('auge', HALF_W - 0.05, -2.0, 1);
 
 // Code-Schloss (Lesepult mit vier Drehr\u00e4dern) im S\u00fcdteil
 const codeWheels = [];
@@ -292,11 +320,7 @@ const codeWheels = [];
   lectern.add(plaque);
   register(plaque, 'Gravur lesen', () => {
     openReading('In den Stein geritzt', `
-      <p>\u00bbFolge dem Weg, den der Magier jeden Abend geht:</p>
-      <p><i>Erst schl\u00e4gt die <b>Uhr</b>,<br>
-      dann dreht sich der <b>Schl\u00fcssel</b> im Schloss,<br>
-      dann \u00f6ffnet er das <b>Ventil</b>,<br>
-      und zuletzt f\u00e4llt die <b>T\u00fcr</b> ins Schloss.\u00ab</i></p>
+      <p><i>Gong. Bart. Dampf. Schwelle.</i></p>
     `);
   });
 
@@ -390,9 +414,9 @@ const uvReveal = []; // Meshes, die nur unter UV sichtbar sind
     const disc = new THREE.Mesh(new THREE.CircleGeometry(0.14, 20), new THREE.MeshBasicMaterial({ color: o.col }));
     disc.position.set(x, 0.05, 0.01);
     chart.add(disc);
-    const num = drawTextMesh(String(o.n), { color: '#ffffff', size: 60, w: 0.18, h: 0.18 });
-    num.position.set(x, -0.22, 0.02);
-    chart.add(num);
+    const mark = drawTextMesh('•', { color: '#ffffff', size: 64, w: 0.18, h: 0.18 });
+    mark.position.set(x, -0.22, 0.02);
+    chart.add(mark);
   });
   chart.children.forEach((c) => { c.visible = false; uvReveal.push(c); });
   scene.add(chart);
@@ -461,11 +485,11 @@ function stepOnTile(tile) {
 // =====================================================================
 
 const DOOR_DEFS = [
-  { x: -3.4, name: 'Archiv',     clue: 'Bis zur Decke voller Akten.',      empty: false },
-  { x: -1.7, name: 'Labor',      clue: 'Es zischt und dampft dahinter.',   empty: false },
-  { x: 0.0,  name: 'Notausgang', clue: 'Vermauert. Kein Durchkommen.',     empty: false },
-  { x: 1.7,  name: 'Lager',      clue: 'Leer ger\u00e4umt. Nur Staub.',          empty: true },
-  { x: 3.4,  name: 'Kontrolle',  clue: 'Hebel an Hebel, dicht gedr\u00e4ngt.',   empty: false },
+  { x: -3.4, name: 'Archiv',     clue: 'Papier.',      empty: false },
+  { x: -1.7, name: 'Labor',      clue: 'Dampf.',       empty: false },
+  { x: 0.0,  name: 'Notausgang', clue: 'Stein.',       empty: false },
+  { x: 1.7,  name: 'Lager',      clue: 'Staub.',       empty: true },
+  { x: 3.4,  name: 'Kontrolle',  clue: 'Hebel.',       empty: false },
 ];
 const doors = [];
 let exitDoorX = 0;
@@ -537,7 +561,7 @@ function buildDoors() {
   }
 
   // Meta-Hinweistafel mittig \u00fcber den T\u00fcren
-  const meta = drawTextMesh('Nur der Raum, der nichts enth\u00e4lt, f\u00fchrt weiter.', { color: '#e9d8ab', size: 30, w: 3.2, h: 0.4 });
+  const meta = drawTextMesh('Was nichts trägt, trägt dich fort.', { color: '#e9d8ab', size: 30, w: 3.2, h: 0.4 });
   meta.position.set(0, doorH + 0.7, Z_NORTH);
   scene.add(meta);
 }
@@ -596,10 +620,10 @@ buildDoors();
 
 function objText(s) { document.getElementById('objective-text').textContent = s; }
 function updateProgress() {
-  if (state.doorOpen) { objText('Die rechte T\u00fcr steht offen \u2014 hindurch!'); return; }
-  if (state.doorsLive) { objText('F\u00fcnf T\u00fcren, f\u00fcnf Schilder. Nur eine f\u00fchrt weiter.'); return; }
-  if (state.codeSolved) { objText('Etwas an der Wand ist erwacht. Bring Licht ins Dunkel.'); return; }
-  objText('Ein langer, finsterer Flur. Pr\u00fcfe, was an den W\u00e4nden h\u00e4ngt.');
+  if (state.doorOpen) { objText('Eine Tür steht offen.'); return; }
+  if (state.doorsLive) { objText('Fünf Türen warten.'); return; }
+  if (state.codeSolved) { objText('Etwas an der Wand erwacht.'); return; }
+  objText('Ein finsterer Flur voller alter Dinge.');
 }
 
 // ---------- HUD-Helfer ----------
@@ -654,7 +678,7 @@ const sound = (() => {
     note(freq) { tone(freq, 0.4, 'sine', 0.12); tone(freq * 2, 0.25, 'sine', 0.04, 0.01); },
     flick() { tone(1200, 0.05, 'square', 0.06); tone(220, 0.18, 'sawtooth', 0.04, 0.02); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.1, i * 0.12)); },
+    success() {},
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -680,15 +704,16 @@ function enterRoom() {
   if (!state.startTime) state.startTime = performance.now();
 }
 
-document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); controls.lock(); });
-document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
+document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); if (touchControls.isTouchDevice) touchControls.enable(); else controls.lock(); });
+document.getElementById('resume-btn').addEventListener('click', () => { if (touchControls.isTouchDevice) touchControls.enable(); else controls.lock(); });
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room5.html'; });
 
 if (shouldAutoStart) {
   enterRoom();
   const lockOnInput = () => {
     sound.unlock();
-    controls.lock();
+    if (touchControls.isTouchDevice) touchControls.enable();
+    else controls.lock();
     document.removeEventListener('click', lockOnInput);
     document.removeEventListener('keydown', lockOnInput);
   };
@@ -701,6 +726,7 @@ controls.addEventListener('lock', () => {
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
+  if (touchControls.isActive()) return;
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -718,14 +744,16 @@ function updateHover() {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
-  document.getElementById('crosshair').classList.toggle('active', !!hovered);
+  document.getElementById('hover-label').textContent = '';
+  document.getElementById('crosshair').classList.remove('active');
 }
 
 function interact() {
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
+
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
 
 document.addEventListener('mousedown', (e) => { if (controls.isLocked && e.button === 0) interact(); });
 document.addEventListener('keydown', (e) => { if (controls.isLocked && e.code === 'KeyE') interact(); });
@@ -735,8 +763,8 @@ document.addEventListener('keydown', (e) => { if (controls.isLocked && e.code ==
 const velocity = new THREE.Vector3();
 function move(dt) {
   const speed = 4.2;
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
+  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
   velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
   velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
   controls.moveRight(velocity.x * dt);
@@ -830,7 +858,7 @@ function animate() {
     if (k >= 1) { a.done = true; if (a.onDone) a.onDone(); }
   }
 
-  if (controls.isLocked && !state.escaped) {
+  if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
     move(dt);
     updateHover();
     if (state.startTime) {

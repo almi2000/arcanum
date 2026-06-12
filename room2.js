@@ -17,6 +17,7 @@
 
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { createMobileControls } from './mobileControls.js';
 
 // ---------- Grundgerüst ----------
 
@@ -74,6 +75,38 @@ function makeLabel(text, color = '#e9d8ab') {
     new THREE.MeshBasicMaterial({ map: tex, transparent: true })
   );
   return mesh;
+}
+
+function makeSymbolLabel(text, { color = '#e9d8ab', size = 64, w = 0.34, h = 0.22 } = {}) {
+  const c = document.createElement('canvas');
+  c.width = 192; c.height = 128;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  g.font = `700 ${size}px "Grenze Gotisch", serif`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = color;
+  g.shadowColor = 'rgba(0,0,0,0.85)';
+  g.shadowBlur = 8;
+  g.fillText(text, c.width / 2, c.height / 2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 4;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
+}
+
+function makeSmallTable(x, z, rotation) {
+  const table = new THREE.Group();
+  table.position.set(x, 0, z);
+  table.rotation.y = rotation;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.12, 0.9), toon(0x3a2a4a));
+  top.position.y = 0.78;
+  table.add(top);
+  for (const [dx, dz] of [[-0.8, -0.32], [0.8, -0.32], [-0.8, 0.32], [0.8, 0.32]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.78, 0.1), toon(0x2a2034));
+    leg.position.set(dx, 0.39, dz);
+    table.add(leg);
+  }
+  return table;
 }
 
 // ---------- Licht ----------
@@ -260,7 +293,7 @@ const animations = []; // { t, dur, fn(k), done?, onDone? }
 //  Ziel: jeder Ring zeigt auf das in der Sternenkarte genannte Gestirn.
 // =====================================================================
 
-const MARK_NAMES = ['STERN', 'MOND', 'SONNE', 'DRACHE', 'KRONE', 'AUGE'];
+const MARK_NAMES = ['✦', '☾', '☉', '♜', '♛', '◉'];
 const ASTRO_TARGETS = { outer: 4 /* KRONE */, middle: 2 /* SONNE */, inner: 5 /* AUGE */ };
 const astroRings = [];
 
@@ -366,15 +399,142 @@ function rotateRing(data) {
   scene.add(stand);
   block(-3.0, 4.6, 0.7);
 
-  register(slab, 'Sternenkarte lesen', () => {
-    openReading('Die Karte der ruhenden Gestirne', `
-      <p>»Wenn der Komet über dem Okulus steht, kommen die Gestirne zur Ruhe — und nur dann gibt das Astrolabium das erste Siegel frei.</p>
-      <p><i>Der <b>äußere</b> Ring weise auf die <b>KRONE</b>,<br>
-      der <b>mittlere</b> Ring auf die <b>SONNE</b>,<br>
-      der <b>innere</b> Ring auf das <b>AUGE</b>.«</i></p>
+  register(slab, 'Sternenkarte', () => {
+    openReading('Ruhende Gestirne', `
+      <p><i>Außen krönt sich der Kreis. Darunter brennt die Scheibe. Im Kern wacht das Auge.</i></p>
+      <p>Die übrigen Zeichen sind mit Ruß verwischt.</p>
     `);
     if (state.objectivePhase < 1) setObjective(1);
   });
+}
+
+// --- Gerätschaften ohne Funktion, damit das Observatorium nicht nur aus Rätseln besteht ---
+{
+  const scrap = new THREE.Group();
+  scrap.position.set(1.8, 0, 5.8);
+  scrap.rotation.y = -0.25;
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.55, 0.8), toon(0x2a2d40));
+  crate.position.y = 0.28;
+  scrap.add(crate);
+  for (let i = 0; i < 4; i++) {
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9, 8), toon(0x6f9cff));
+    tube.rotation.z = Math.PI / 2;
+    tube.position.set(-0.4 + i * 0.25, 0.65, -0.12 + (i % 2) * 0.25);
+    scrap.add(tube);
+  }
+  scene.add(scrap);
+  block(1.8, 5.8, 0.9);
+  register(scrap, 'Alte Fernrohre', () => toast('Zerkratzte Linsen, lose Schrauben. Der Himmel bleibt darin blind.'));
+}
+
+// --- Mondphasen-Scheibe: wirkt wichtig, gehoert aber nicht zur Loesung ---
+{
+  const phases = new THREE.Group();
+  phases.position.set(6.5, 0, 1.0);
+  phases.lookAt(0, 0, 0);
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.48, 0.85, 12), toon(0x2a2d40));
+  base.position.y = 0.42;
+  phases.add(base);
+  const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.0, 8), toon(0xc9a227));
+  axle.rotation.z = Math.PI / 2;
+  axle.position.y = 1.15;
+  phases.add(axle);
+  const disk = new THREE.Group();
+  disk.position.y = 1.45;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.055, 8, 36), toon(0xc9a227));
+  disk.add(ring);
+  const dark = new THREE.Mesh(new THREE.CircleGeometry(0.48, 32), toon(0x101831));
+  dark.position.z = -0.01;
+  disk.add(dark);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const phase = new THREE.Mesh(new THREE.CircleGeometry(0.08, 18), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x8798cf : 0xe8ecff }));
+    phase.position.set(Math.sin(a) * 0.38, Math.cos(a) * 0.38, 0.02);
+    disk.add(phase);
+  }
+  phases.add(disk);
+  scene.add(phases);
+  block(6.5, 1.0, 0.75);
+  register(disk, 'Mondphasen-Scheibe', () => {
+    animations.push({ t: 0, dur: 0.45, fn: (k) => { disk.rotation.z += 0.04 * Math.sin(k * Math.PI); } });
+    toast('Die Scheibe knirscht und bleibt zwischen zwei Phasen haengen.');
+  });
+}
+
+// --- Prismen- und Linsentisch als falscher Lichtpfad-Kandidat ---
+{
+  const table = makeSmallTable(-1.0, 6.6, 0.18);
+  register(table, 'Linsentisch', () => toast('Prismen, Okulare, Messingringe. Alles sieht nuetzlich aus.'));
+  const prismColors = [0x9ab4ff, 0xc9a227, 0x8a6bff, 0xdfeaff];
+  for (let i = 0; i < 4; i++) {
+    const prism = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.36, 3), new THREE.MeshBasicMaterial({ color: prismColors[i], transparent: true, opacity: 0.72 }));
+    prism.position.set(-0.55 + i * 0.36, 1.02, -0.12 + (i % 2) * 0.28);
+    prism.rotation.set(0.8, 0.3 + i * 0.4, 0.2);
+    table.add(prism);
+    register(prism, 'Kristallprisma', () => toast('Es bricht Licht in falsche Farben.'));
+  }
+  const lens = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 8, 24), toon(0xc9a227));
+  lens.position.set(0.68, 1.03, 0.18);
+  lens.rotation.x = Math.PI / 2;
+  table.add(lens);
+  register(lens, 'Lose Linse', () => toast('Die Linse ist blind geschliffen.'));
+  scene.add(table);
+  block(-1.0, 6.6, 1.0);
+}
+
+// --- Defektes Mini-Astrolabium als falscher Zwilling des echten Pults ---
+{
+  const broken = new THREE.Group();
+  broken.position.set(-6.4, 0, 0.6);
+  broken.lookAt(0, 0, 0);
+  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 0.8, 10), toon(0x2a2d40));
+  column.position.y = 0.4;
+  broken.add(column);
+  const face = new THREE.Group();
+  face.position.y = 1.08;
+  face.rotation.x = -0.45;
+  const outer = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.035, 8, 30), toon(0x6f9cff));
+  const inner = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.028, 8, 24), toon(0x8a6bff));
+  face.add(outer, inner);
+  const brokenNeedle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.54, 0.03), toon(0xe9d8ab));
+  brokenNeedle.rotation.z = 0.75;
+  face.add(brokenNeedle);
+  const missing = makeSymbolLabel('✕', { color: '#2a2034', size: 84, w: 0.34, h: 0.28 });
+  missing.position.z = 0.04;
+  face.add(missing);
+  broken.add(face);
+  scene.add(broken);
+  block(-6.4, 0.6, 0.65);
+  register(face, 'Defektes Astrolabium', () => toast('Ein Lehrmodell. Die Ringe sind festgefressen.'));
+}
+
+// --- Zerrissene Sternkarten mit widerspruechlichen Symbolen ---
+{
+  const rack = new THREE.Group();
+  rack.position.set(-4.6, 0, -2.3);
+  rack.rotation.y = 0.55;
+  const board = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.1, 0.9), toon(0x4a2e1a));
+  board.position.y = 0.72;
+  rack.add(board);
+  const symbols = ['♜', '☾', '✦', '♛', '◉'];
+  for (let i = 0; i < 5; i++) {
+    const scrapChart = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.32), toon(i % 2 ? 0xd8c28c : 0xe9d8ab));
+    scrapChart.position.set(-0.62 + i * 0.31, 0.82 + (i % 2) * 0.03, -0.12 + (i % 3) * 0.12);
+    scrapChart.rotation.x = -Math.PI / 2;
+    scrapChart.rotation.z = (i - 2) * 0.18;
+    rack.add(scrapChart);
+    const symbol = makeSymbolLabel(symbols[i], { color: '#3a2a4a', size: 50, w: 0.18, h: 0.16 });
+    symbol.position.copy(scrapChart.position);
+    symbol.position.y += 0.01;
+    symbol.rotation.copy(scrapChart.rotation);
+    rack.add(symbol);
+  }
+  scene.add(rack);
+  block(-4.6, -2.3, 0.9);
+  register(rack, 'Zerrissene Sternkarten', () => openReading('Fetzen alter Karten', `
+    <p>Mehrere Fragmente widersprechen einander. Ein Randstueck zeigt nur: <i>...nicht diese Nacht...</i></p>
+  `));
 }
 
 // =====================================================================
@@ -497,14 +657,29 @@ function rotateMirror(data) {
   fresco.add(moon);
   scene.add(fresco);
 
-  register(panel, 'Wandfresko betrachten', () => {
-    openReading('Das Fresko vom wandernden Licht', `
-      <p>»Das Mondlicht ist scheu und gehorcht nur den richtig gestellten Spiegeln.</p>
-      <p><i>Findest du für jeden Spiegel die rechte Wendung, reichen sie das Licht
-      einander zu — bis es das Tor erreicht.«</i></p>
+  register(panel, 'Wandfresko', () => {
+    openReading('Wanderndes Licht', `
+      <p>Drei blasse Scheiben, ein silberner Strich, ein Tor. Der Rest ist abgeplatzt.</p>
     `);
     if (state.objectivePhase < 2 && state.astroSolved) setObjective(2);
   });
+}
+
+{
+  for (const [x, z, rot] of [[-5.7, -2.8, 0.8], [2.8, 6.4, -0.4]]) {
+    const blind = new THREE.Group();
+    blind.position.set(x, 0, z);
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 1.4, 8), toon(0x2a2d40));
+    post.position.y = 0.7;
+    blind.add(post);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(0.32, 24), toon(0x44506a));
+    disc.position.y = 1.55;
+    disc.rotation.y = rot;
+    blind.add(disc);
+    scene.add(blind);
+    block(x, z, 0.45);
+    register(disc, 'Blinder Spiegel', () => toast('Mattes Glas. Es schluckt den Mondschein.'));
+  }
 }
 
 // =====================================================================
@@ -723,7 +898,7 @@ const sound = (() => {
     pickup() { tone(660, 0.15); tone(990, 0.25, 'sine', 0.1, 0.08); },
     place() { tone(520, 0.12, 'triangle', 0.07); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.1, i * 0.12)); },
+    success() {},
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -752,16 +927,21 @@ function enterRoom() {
 document.getElementById('start-btn').addEventListener('click', () => {
   sound.unlock();
   enterRoom();
-  controls.lock();
+  if (touchControls.isTouchDevice) touchControls.enable();
+  else controls.lock();
 });
-document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
+document.getElementById('resume-btn').addEventListener('click', () => {
+  if (touchControls.isTouchDevice) touchControls.enable();
+  else controls.lock();
+});
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room3.html'; });
 
 if (shouldAutoStart) {
   enterRoom();
   const lockOnInput = () => {
     sound.unlock();
-    controls.lock();
+    if (touchControls.isTouchDevice) touchControls.enable();
+    else controls.lock();
     document.removeEventListener('click', lockOnInput);
     document.removeEventListener('keydown', lockOnInput);
   };
@@ -774,6 +954,7 @@ controls.addEventListener('lock', () => {
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
+  if (touchControls.isActive()) return;
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -791,14 +972,16 @@ function updateHover() {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
-  document.getElementById('crosshair').classList.toggle('active', !!hovered);
+  document.getElementById('hover-label').textContent = '';
+  document.getElementById('crosshair').classList.remove('active');
 }
 
 function interact() {
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
+
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
 
 document.addEventListener('mousedown', (e) => {
   if (controls.isLocked && e.button === 0) interact();
@@ -812,8 +995,8 @@ document.addEventListener('keydown', (e) => {
 const velocity = new THREE.Vector3();
 function move(dt) {
   const speed = 4.2;
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
+  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
   velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
   velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
   controls.moveRight(velocity.x * dt);
@@ -906,7 +1089,7 @@ function animate() {
     if (k >= 1) { a.done = true; if (a.onDone) a.onDone(); }
   }
 
-  if (controls.isLocked && !state.escaped) {
+  if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
     move(dt);
     updateHover();
     if (state.startTime) {

@@ -15,6 +15,7 @@
 
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { createMobileControls } from './mobileControls.js';
 
 // ---------- Grundgerüst ----------
 
@@ -387,12 +388,72 @@ function strikeBell(data) {
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.8), toon(0xe9d8ab));
   sign.add(panel);
   scene.add(sign);
-  register(panel, 'Tafel lesen', () => {
-    openReading('Vom Lied der fünf Glocken', `
-      <p>»Die Kammer kennt ein altes Lied — wer am Hebel zieht, bekommt es vorgesungen.</p>
-      <p><i>Nur wer es fehlerfrei zurückgibt, weckt das Räderwerk.«</i></p>
+  register(panel, 'Angeschlagene Tafel', () => {
+    openReading('Fünf Glocken', `
+      <p><i>Erst lauschen. Dann antworten.</i></p>
     `);
   });
+}
+
+// --- Ersatzteile und alte Messgeräte als Ablenkung ---
+{
+  const bench = new THREE.Group();
+  bench.position.set(1.8, 0, 5.0);
+  bench.rotation.y = -0.35;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.12, 0.75), toon(0x5a3a22));
+  top.position.y = 0.85;
+  bench.add(top);
+  for (const [dx, dz] of [[-0.9, -0.25], [0.9, -0.25], [-0.9, 0.25], [0.9, 0.25]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.85, 0.1), toon(0x4a2e1a));
+    leg.position.set(dx, 0.42, dz);
+    bench.add(leg);
+  }
+  for (let i = 0; i < 4; i++) {
+    const gear = makeGear(0.18 + i * 0.03, 10 + i, 0x7a5e2a, 0.08);
+    gear.position.set(-0.65 + i * 0.42, 0.96, (i % 2) * 0.18 - 0.08);
+    gear.rotation.x = Math.PI / 2;
+    bench.add(gear);
+  }
+  scene.add(bench);
+  block(1.8, 5.0, 1.0);
+  register(bench, 'Ersatzteile', () => toast('Messingräder, verbogene Federn, kein passender Zahn.'));
+}
+
+// --- Falsches Glockenspiel mit gesprungenen Glocken ---
+{
+  const crackedRack = new THREE.Group();
+  crackedRack.position.set(3.2, 0, -4.8);
+  crackedRack.lookAt(0, 0, 0);
+
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 0.18), toon(0x5a3a22));
+  stand.position.y = 1.25;
+  crackedRack.add(stand);
+  for (const dx of [-0.65, 0.65]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.25, 8), toon(0x4a3220));
+    leg.position.set(dx, 0.62, 0);
+    crackedRack.add(leg);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    const bell = new THREE.Group();
+    bell.position.set(-0.45 + i * 0.45, 1.0, 0.05);
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.21, 0.32, 12, 1, true), toon(0x8a6a2e, { side: THREE.DoubleSide }));
+    cup.position.y = -0.18;
+    bell.add(cup);
+    const crack = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.34, 0.03), toon(0x241a10));
+    crack.position.set(0.04, -0.18, 0.12);
+    crack.rotation.z = 0.28 - i * 0.2;
+    bell.add(crack);
+    crackedRack.add(bell);
+    register(cup, 'Gesprungene Glocke', () => {
+      sound.thud();
+      animations.push({ t: 0, dur: 0.25, fn: (k) => { bell.rotation.z = Math.sin(k * Math.PI) * 0.08; } });
+      toast('Ein dumpfer, toter Klang.');
+    });
+  }
+
+  scene.add(crackedRack);
+  block(3.2, -4.8, 0.85);
 }
 
 // =====================================================================
@@ -535,12 +596,64 @@ function toggleWeight(data) {
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.8), toon(0xe9d8ab));
   sign.add(panel);
   scene.add(sign);
-  register(panel, 'Tafel lesen', () => {
-    openReading('Von der Waage des Erzmagiers', `
-      <p>»Das Gegengewicht wiegt <b>${SCALE_TARGET}</b> — kein Gran mehr, kein Gran weniger.</p>
-      <p><i>Erst wenn beide Schalen in vollkommenem Gleichgewicht ruhen, gibt das Werk nach.«</i></p>
+  register(panel, 'Verkratzte Tafel', () => {
+    openReading('Waage', `
+      <p><i>Der Balken lügt nicht.</i></p>
     `);
   });
+}
+
+// --- Kaputte Mini-Waage und unbeschriftete Gewichte ---
+{
+  const mini = new THREE.Group();
+  mini.position.set(-1.2, 0, -5.0);
+  mini.lookAt(0, 0, 0);
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.5, 0.18, 14), toon(0x3a2c18));
+  base.position.y = 0.09;
+  mini.add(base);
+  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.0, 8), toon(0x6b5320));
+  pillar.position.y = 0.58;
+  mini.add(pillar);
+  const beam = new THREE.Group();
+  beam.position.y = 1.1;
+  beam.rotation.z = -0.28;
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.07, 0.08), toon(0xc9a227));
+  beam.add(bar);
+  for (const sx of [-0.52, 0.52]) {
+    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.36, 4), toon(0x6b5320));
+    chain.position.set(sx, -0.18, 0);
+    beam.add(chain);
+    const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.16, 0.07, 12), toon(0x7a5e2a));
+    dish.position.set(sx, -0.38, 0);
+    beam.add(dish);
+  }
+  mini.add(beam);
+  scene.add(mini);
+  block(-1.2, -5.0, 0.65);
+  register(mini, 'Kaputte Mini-Waage', () => toast('Der Balken bleibt schief, egal was man versucht.'));
+
+  const weightTable = new THREE.Group();
+  weightTable.position.set(-3.0, 0, -4.9);
+  weightTable.rotation.y = 0.35;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 0.75), toon(0x5a3a22));
+  top.position.y = 0.72;
+  weightTable.add(top);
+  for (const [dx, dz] of [[-0.65, -0.25], [0.65, -0.25], [-0.65, 0.25], [0.65, 0.25]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.72, 0.09), toon(0x4a2e1a));
+    leg.position.set(dx, 0.36, dz);
+    weightTable.add(leg);
+  }
+  register(weightTable, 'Gewichtstisch', () => toast('Ersatzgewichte ohne verlässliche Markierung.'));
+  const dullColors = [0x6f6a62, 0x8a7a56, 0x5f6470, 0x7a5e2a, 0x3a2c18];
+  dullColors.forEach((color, i) => {
+    const weight = new THREE.Mesh(new THREE.IcosahedronGeometry(0.15 + (i % 3) * 0.035), toon(color));
+    weight.position.set(-0.55 + i * 0.28, 0.9, -0.12 + (i % 2) * 0.25);
+    weightTable.add(weight);
+    register(weight, 'Unbeschriftetes Gewicht', () => toast('Keine Zahl, keine Markierung. Es hilft dir nicht weiter.'));
+  });
+  scene.add(weightTable);
+  block(-3.0, -4.9, 0.85);
 }
 
 // =====================================================================
@@ -665,13 +778,61 @@ function advanceHand(which) {
   const panel = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.8), toon(0xe9d8ab));
   sign.add(panel);
   scene.add(sign);
-  register(panel, 'Tafel lesen', () => {
-    openReading('Die Stunde des Aufbruchs', `
-      <p>»Der Turm gibt nur frei, wenn die große Uhr jene Stunde zeigt,
-      da der Erzmagier einst seinen Pakt schloss:</p>
-      <p><i>Zur <b>dritten Stunde</b> nach Mitternacht,<br>
-      wenn der lange Zeiger zur <b>Hälfte</b> gewandert ist.«</i></p>
+  register(panel, 'Spröde Tafel', () => {
+    openReading('Stunde', `
+      <p><i>III</i></p>
+      <p>Darunter ist nur noch ein halber Kreis zu erkennen.</p>
     `);
+  });
+}
+
+{
+  const dummyClock = new THREE.Group();
+  dummyClock.position.set(4.0, 0, -4.0);
+  dummyClock.lookAt(0, 0, 0);
+  const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 0.9, 10), toon(0x4a3220));
+  stand.position.y = 0.45;
+  dummyClock.add(stand);
+  const face = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.12, 28), toon(0x6b5320));
+  face.rotation.x = Math.PI / 2;
+  face.position.y = 1.35;
+  dummyClock.add(face);
+  const crack = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.04), toon(0x1a140c));
+  crack.position.set(0.08, 1.35, 0.08);
+  crack.rotation.z = 0.4;
+  dummyClock.add(crack);
+  scene.add(dummyClock);
+  block(4.0, -4.0, 0.65);
+  register(dummyClock, 'Stehende Nebenuhr', () => toast('Die Zeiger sind festgerostet.'));
+}
+
+// --- Falsche Wanduhren mit widerspruechlichen Zeiten ---
+{
+  const wallClocks = [
+    { x: 6.9, z: -1.2, hour: 1, min: 9, note: 'Diese Uhr tickt rueckwaerts.' },
+    { x: -1.6, z: 6.8, hour: 4, min: 6, note: 'Der Minutenzeiger sitzt locker.' },
+    { x: -6.8, z: -3.6, hour: 10, min: 2, note: 'Das Glas ist von innen beschlagen.' },
+  ];
+
+  wallClocks.forEach((def) => {
+    const clock = new THREE.Group();
+    clock.position.set(def.x, 2.65, def.z);
+    clock.lookAt(0, 2.65, 0);
+    const frame = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.05, 8, 28), toon(0x6b5320));
+    clock.add(frame);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.36, 28), toon(0xe9d8ab));
+    face.position.z = 0.02;
+    clock.add(face);
+    const hour = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.24, 0.03), toon(0x2a2118));
+    hour.position.set(0, 0.12, 0.05);
+    hour.rotation.z = -def.hour * Math.PI / 6;
+    clock.add(hour);
+    const min = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.32, 0.03), toon(0x6b1f2a));
+    min.position.set(0, 0.16, 0.07);
+    min.rotation.z = -def.min * Math.PI / 6;
+    clock.add(min);
+    scene.add(clock);
+    register(clock, 'Wanduhr', () => toast(def.note));
   });
 }
 
@@ -808,8 +969,8 @@ function objText(s) { document.getElementById('objective-text').textContent = s;
 
 function updateProgress() {
   if (state.doorOpen) { objText('Hinaus durch den Gang!'); return; }
-  if (state.sealBroken) { objText('Das Räderwerk steht still — das Tor regt sich.'); return; }
-  objText('Drei stumme Zahnräder verriegeln das Tor. Bring sie zum Drehen.');
+  if (state.sealBroken) { objText('Das Tor regt sich.'); return; }
+  objText('Drei Zahnräder schweigen.');
 }
 
 // ---------- HUD-Helfer ----------
@@ -863,7 +1024,7 @@ const sound = (() => {
     place() { tone(440, 0.18, 'triangle', 0.08); },
     tick() { tone(900, 0.05, 'square', 0.05); tone(1400, 0.04, 'square', 0.03, 0.01); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.35, 'sine', 0.1, i * 0.12)); },
+    success() {},
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -892,16 +1053,21 @@ function enterRoom() {
 document.getElementById('start-btn').addEventListener('click', () => {
   sound.unlock();
   enterRoom();
-  controls.lock();
+  if (touchControls.isTouchDevice) touchControls.enable();
+  else controls.lock();
 });
-document.getElementById('resume-btn').addEventListener('click', () => controls.lock());
+document.getElementById('resume-btn').addEventListener('click', () => {
+  if (touchControls.isTouchDevice) touchControls.enable();
+  else controls.lock();
+});
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room4.html'; });
 
 if (shouldAutoStart) {
   enterRoom();
   const lockOnInput = () => {
     sound.unlock();
-    controls.lock();
+    if (touchControls.isTouchDevice) touchControls.enable();
+    else controls.lock();
     document.removeEventListener('click', lockOnInput);
     document.removeEventListener('keydown', lockOnInput);
   };
@@ -914,6 +1080,7 @@ controls.addEventListener('lock', () => {
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
+  if (touchControls.isActive()) return;
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -931,14 +1098,16 @@ function updateHover() {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
-  document.getElementById('crosshair').classList.toggle('active', !!hovered);
+  document.getElementById('hover-label').textContent = '';
+  document.getElementById('crosshair').classList.remove('active');
 }
 
 function interact() {
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
+
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
 
 document.addEventListener('mousedown', (e) => {
   if (controls.isLocked && e.button === 0) interact();
@@ -952,8 +1121,8 @@ document.addEventListener('keydown', (e) => {
 const velocity = new THREE.Vector3();
 function move(dt) {
   const speed = 4.2;
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-  const side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
+  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
   velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
   velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
   controls.moveRight(velocity.x * dt);
@@ -1042,7 +1211,7 @@ function animate() {
     if (k >= 1) { a.done = true; if (a.onDone) a.onDone(); }
   }
 
-  if (controls.isLocked && !state.escaped) {
+  if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
     move(dt);
     updateHover();
     if (state.startTime) {
