@@ -1004,8 +1004,8 @@ raycaster.far = 3.6;
 const center = new THREE.Vector2(0, 0);
 let hovered = null;
 
-function updateHover() {
-  raycaster.setFromCamera(center, camera);
+function updateHover(pointer = center) {
+  raycaster.setFromCamera(pointer, camera);
   const meshes = [];
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
@@ -1117,7 +1117,11 @@ function setupTouchControls() {
       const wasTap = !didDragLook && performance.now() - tapStartTime < 360;
       lookId = null;
       if (wasTap) {
-        updateHover();
+        const pointer = new THREE.Vector2(
+          (touch.clientX / window.innerWidth) * 2 - 1,
+          -(touch.clientY / window.innerHeight) * 2 + 1
+        );
+        updateHover(pointer);
         interact();
       }
     }

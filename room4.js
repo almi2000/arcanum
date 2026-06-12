@@ -738,8 +738,8 @@ raycaster.far = 3.6;
 const center = new THREE.Vector2(0, 0);
 let hovered = null;
 
-function updateHover() {
-  raycaster.setFromCamera(center, camera);
+function updateHover(pointer = center) {
+  raycaster.setFromCamera(pointer, camera);
   const meshes = [];
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);

@@ -111,7 +111,11 @@ export function createMobileControls({ THREE, camera, enterRoom, interact, updat
         const wasTap = !didDragLook && performance.now() - tapStartTime < 360;
         lookId = null;
         if (wasTap) {
-          updateHover();
+          const pointer = new THREE.Vector2(
+            (touch.clientX / window.innerWidth) * 2 - 1,
+            -(touch.clientY / window.innerHeight) * 2 + 1
+          );
+          updateHover(pointer);
           interact();
         }
       }
