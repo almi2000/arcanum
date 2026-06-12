@@ -1029,17 +1029,20 @@ function setupTouchControls() {
   if (!isTouchDevice || document.getElementById('mobile-controls')) return;
   const root = document.createElement('div');
   root.id = 'mobile-controls';
-  root.innerHTML = '<div id="touch-look-zone"></div><div id="touch-stick"><div id="touch-stick-knob"></div></div><button id="touch-use" type="button">✦</button>';
+  root.innerHTML = '<div id="touch-look-zone"></div><div id="touch-stick"><div id="touch-stick-knob"></div></div>';
   document.body.appendChild(root);
 
   const stick = root.querySelector('#touch-stick');
   const knob = root.querySelector('#touch-stick-knob');
   const lookZone = root.querySelector('#touch-look-zone');
-  const useButton = root.querySelector('#touch-use');
   let stickId = null;
   let lookId = null;
   let lastLookX = 0;
   let lastLookY = 0;
+  let tapStartX = 0;
+  let tapStartY = 0;
+  let tapStartTime = 0;
+  let didDragLook = false;
 
   function setStick(clientX, clientY) {
     const rect = stick.getBoundingClientRect();
@@ -1087,6 +1090,10 @@ function setupTouchControls() {
     lookId = touch.identifier;
     lastLookX = touch.clientX;
     lastLookY = touch.clientY;
+    tapStartX = touch.clientX;
+    tapStartY = touch.clientY;
+    tapStartTime = performance.now();
+    didDragLook = false;
   }, { passive: false });
   lookZone.addEventListener('touchmove', (event) => {
     event.preventDefault();
@@ -1096,6 +1103,7 @@ function setupTouchControls() {
       const dy = touch.clientY - lastLookY;
       lastLookX = touch.clientX;
       lastLookY = touch.clientY;
+      if (Math.hypot(touch.clientX - tapStartX, touch.clientY - tapStartY) > 12) didDragLook = true;
       touchYaw -= dx * 0.0032;
       touchPitch -= dy * 0.0032;
       touchPitch = THREE.MathUtils.clamp(touchPitch, -Math.PI / 2 + 0.08, Math.PI / 2 - 0.08);
@@ -1104,16 +1112,17 @@ function setupTouchControls() {
     }
   }, { passive: false });
   lookZone.addEventListener('touchend', (event) => {
-    for (const touch of event.changedTouches) if (touch.identifier === lookId) lookId = null;
+    for (const touch of event.changedTouches) {
+      if (touch.identifier !== lookId) continue;
+      const wasTap = !didDragLook && performance.now() - tapStartTime < 360;
+      lookId = null;
+      if (wasTap) {
+        updateHover();
+        interact();
+      }
+    }
   });
   lookZone.addEventListener('touchcancel', () => { lookId = null; });
-
-  useButton.addEventListener('click', (event) => {
-    event.preventDefault();
-    enableTouchPlay();
-    updateHover();
-    interact();
-  });
 }
 
 setupTouchControls();
