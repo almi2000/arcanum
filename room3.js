@@ -1049,7 +1049,7 @@ const sound = (() => {
     place() { tone(440, 0.18, 'triangle', 0.08); },
     tick() { tone(900, 0.05, 'square', 0.05); tone(1400, 0.04, 'square', 0.03, 0.01); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() {},
+    success() { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.45, 'triangle', 0.09, i * 0.13)); },
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -1063,7 +1063,6 @@ document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
-const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
 const shouldAutoStart = new URLSearchParams(window.location.search).get('autostart') === '1';
 const nextRoomUrl = 'room4.html?autostart=1';
@@ -1123,8 +1122,8 @@ function updateHover(pointer = center) {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = '';
-  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
+  document.getElementById('crosshair').classList.toggle('active', !!hovered);
 }
 
 function interact() {

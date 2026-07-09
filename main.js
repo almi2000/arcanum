@@ -1,6 +1,7 @@
 // ============ Arcanum — Entkomme dem Turm des Erzmagiers ============
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { createMobileControls } from './mobileControls.js';
 
 // ---------- Grundgerüst ----------
 
@@ -776,7 +777,7 @@ function collectRune(key, entry, mesh) {
   entry.enabled = false;
   mesh.removeFromParent();
   state.runes.push(key);
-  fillSlot(key === 'feuer' ? 'feuer' : key);
+  fillSlot(key);
   toast(`Die ${RUNES[key].name} summt leise in deiner Hand.`);
   sound.pickup();
   if (state.objectivePhase < 2) setObjective(2);
@@ -799,7 +800,7 @@ function placeRune(ped) {
   const [key] = state.runes.splice(runeIndex, 1);
   ped.filled = true;
   state.runesPlaced++;
-  document.getElementById(`slot-${key === 'feuer' ? 'feuer' : key}`).classList.add('used');
+  document.getElementById(`slot-${key}`).classList.add('used');
 
   const stone = runeStone(key, 1.1);
   stone.position.set(0, 1.45, 0);
@@ -951,7 +952,7 @@ const sound = (() => {
     place() { tone(440, 0.2, 'triangle'); tone(550, 0.3, 'triangle', 0.08, 0.1); },
     flame() { tone(330, 0.12, 'triangle', 0.08); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() {},
+    success() { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.45, 'triangle', 0.09, i * 0.13)); },
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -962,16 +963,9 @@ const controls = new PointerLockControls(camera, document.body);
 const keys = {};
 document.addEventListener('keydown', (e) => { keys[e.code] = true; });
 document.addEventListener('keyup', (e) => { keys[e.code] = false; });
-const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-const touchMove = { x: 0, z: 0 };
-let touchActive = false;
-let touchYaw = 0;
-let touchPitch = 0;
-const touchEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
-const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
 const nextRoomUrl = 'room2.html?autostart=1';
 
@@ -984,11 +978,12 @@ function enterRoom() {
 
 document.getElementById('start-btn').addEventListener('click', () => {
   sound.unlock();
-  if (isTouchDevice) enableTouchPlay();
+  enterRoom();
+  if (touchControls.isTouchDevice) touchControls.enable();
   else controls.lock();
 });
 document.getElementById('resume-btn').addEventListener('click', () => {
-  if (isTouchDevice) enableTouchPlay();
+  if (touchControls.isTouchDevice) touchControls.enable();
   else controls.lock();
 });
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room2.html'; });
@@ -998,7 +993,7 @@ controls.addEventListener('lock', () => {
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
-  if (touchActive) return;
+  if (touchControls.isActive()) return;
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -1016,8 +1011,8 @@ function updateHover(pointer = center) {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = '';
-  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
+  document.getElementById('crosshair').classList.toggle('active', !!hovered);
 }
 
 function interact() {
@@ -1025,117 +1020,7 @@ function interact() {
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
 
-function enableTouchPlay() {
-  touchActive = true;
-  document.body.classList.add('touch-playing');
-  enterRoom();
-}
-
-function setupTouchControls() {
-  if (!isTouchDevice || document.getElementById('mobile-controls')) return;
-  const root = document.createElement('div');
-  root.id = 'mobile-controls';
-  root.innerHTML = '<div id="touch-look-zone"></div><div id="touch-stick"><div id="touch-stick-knob"></div></div>';
-  document.body.appendChild(root);
-
-  const stick = root.querySelector('#touch-stick');
-  const knob = root.querySelector('#touch-stick-knob');
-  const lookZone = root.querySelector('#touch-look-zone');
-  let stickId = null;
-  let lookId = null;
-  let lastLookX = 0;
-  let lastLookY = 0;
-  let tapStartX = 0;
-  let tapStartY = 0;
-  let tapStartTime = 0;
-  let didDragLook = false;
-
-  function setStick(clientX, clientY) {
-    const rect = stick.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-    const max = rect.width * 0.34;
-    const len = Math.hypot(dx, dy);
-    const scale = len > max ? max / len : 1;
-    const x = dx * scale;
-    const y = dy * scale;
-    knob.style.transform = `translate(${x}px, ${y}px)`;
-    touchMove.x = THREE.MathUtils.clamp(x / max, -1, 1);
-    touchMove.z = THREE.MathUtils.clamp(-y / max, -1, 1);
-  }
-
-  function resetStick() {
-    stickId = null;
-    touchMove.x = 0;
-    touchMove.z = 0;
-    knob.style.transform = 'translate(0, 0)';
-  }
-
-  stick.addEventListener('touchstart', (event) => {
-    event.preventDefault();
-    enableTouchPlay();
-    const touch = event.changedTouches[0];
-    stickId = touch.identifier;
-    setStick(touch.clientX, touch.clientY);
-  }, { passive: false });
-  stick.addEventListener('touchmove', (event) => {
-    event.preventDefault();
-    for (const touch of event.changedTouches) if (touch.identifier === stickId) setStick(touch.clientX, touch.clientY);
-  }, { passive: false });
-  stick.addEventListener('touchend', (event) => {
-    for (const touch of event.changedTouches) if (touch.identifier === stickId) resetStick();
-  });
-  stick.addEventListener('touchcancel', resetStick);
-
-  lookZone.addEventListener('touchstart', (event) => {
-    event.preventDefault();
-    enableTouchPlay();
-    const touch = event.changedTouches[0];
-    lookId = touch.identifier;
-    lastLookX = touch.clientX;
-    lastLookY = touch.clientY;
-    tapStartX = touch.clientX;
-    tapStartY = touch.clientY;
-    tapStartTime = performance.now();
-    didDragLook = false;
-  }, { passive: false });
-  lookZone.addEventListener('touchmove', (event) => {
-    event.preventDefault();
-    for (const touch of event.changedTouches) {
-      if (touch.identifier !== lookId) continue;
-      const dx = touch.clientX - lastLookX;
-      const dy = touch.clientY - lastLookY;
-      lastLookX = touch.clientX;
-      lastLookY = touch.clientY;
-      if (Math.hypot(touch.clientX - tapStartX, touch.clientY - tapStartY) > 12) didDragLook = true;
-      touchYaw -= dx * 0.0032;
-      touchPitch -= dy * 0.0032;
-      touchPitch = THREE.MathUtils.clamp(touchPitch, -Math.PI / 2 + 0.08, Math.PI / 2 - 0.08);
-      touchEuler.set(touchPitch, touchYaw, 0);
-      camera.quaternion.setFromEuler(touchEuler);
-    }
-  }, { passive: false });
-  lookZone.addEventListener('touchend', (event) => {
-    for (const touch of event.changedTouches) {
-      if (touch.identifier !== lookId) continue;
-      const wasTap = !didDragLook && performance.now() - tapStartTime < 360;
-      lookId = null;
-      if (wasTap) {
-        const pointer = new THREE.Vector2(
-          (touch.clientX / window.innerWidth) * 2 - 1,
-          -(touch.clientY / window.innerHeight) * 2 + 1
-        );
-        updateHover(pointer);
-        interact();
-      }
-    }
-  });
-  lookZone.addEventListener('touchcancel', () => { lookId = null; });
-}
-
-setupTouchControls();
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
 
 document.addEventListener('mousedown', (e) => {
   if (controls.isLocked && e.button === 0) interact();
@@ -1149,8 +1034,8 @@ document.addEventListener('keydown', (e) => {
 const velocity = new THREE.Vector3();
 function move(dt) {
   const speed = 4.2;
-  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchMove.z, -1, 1);
-  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchMove.x, -1, 1);
+  const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
+  const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
   velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
   velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
   controls.moveRight(velocity.x * dt);
@@ -1252,7 +1137,7 @@ function animate() {
     if (k >= 1) { a.done = true; if (a.onDone) a.onDone(); }
   }
 
-  if ((controls.isLocked || touchActive) && !state.escaped) {
+  if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
     move(dt);
     updateHover();
     if (state.startTime) {
