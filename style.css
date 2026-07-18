@@ -308,6 +308,35 @@ html, body {
   }
 }
 
+/* ---------- Raumübergänge ---------- */
+
+#room-fade {
+  position: fixed; inset: 0; z-index: 40;
+  background: #050310;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+#room-fade.dark { opacity: 1; }
+
+#continue-hint {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+  z-index: 12;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  color: var(--parchment);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  animation: hint-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
 /* ---------- Vollbild-Schirme ---------- */
 
 #title-screen, #pause-screen, #win-screen {

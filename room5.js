@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, storedElapsedMs, clearElapsed, showContinueHint } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -1048,8 +1049,12 @@ document.getElementById('resume-btn').addEventListener('click', () => { if (touc
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -1146,6 +1151,7 @@ function win() {
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
   document.getElementById('win-time').textContent = `${mm}:${ss}`;
+  clearElapsed(); // Durchlauf beendet — gespeicherte Zeit verwerfen
   hud.classList.add('hidden');
   winScreen.classList.remove('hidden');
   controls.unlock();

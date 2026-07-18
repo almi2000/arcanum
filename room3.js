@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, fadeOutAndGo, storedElapsedMs, saveElapsedMs, showContinueHint } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -873,7 +874,9 @@ function checkAllLocks() {
     sound.success();
     for (const key of Object.keys(gearLocks)) gearLocks[key].gear.userData.gearSpeed = 2.2;
     releaseGearLocks();
-    openDoor();
+    // Tor erst öffnen, wenn die Zahnräder sichtbar herausgefallen sind —
+    // sonst überschreibt der Tor-Toast sofort die Erfolgsmeldung.
+    setTimeout(openDoor, 1600);
     updateProgress();
   }
 }
@@ -1087,8 +1090,12 @@ document.getElementById('resume-btn').addEventListener('click', () => {
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room4.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -1190,7 +1197,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------

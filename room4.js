@@ -20,6 +20,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, fadeOutAndGo, storedElapsedMs, saveElapsedMs, showContinueHint } from './transition.js';
 
 // ---------- Grundger\u00fcst ----------
 
@@ -208,7 +209,7 @@ const animations = [];
 const PICTURES = {
   uhr:       { emoji: '\uD83D\uDD52', zahl: 5, name: 'Die Uhr' },
   schluessel:{ emoji: '\uD83D\uDD11', zahl: 2, name: 'Der Schl\u00fcssel' },
-  ventil:    { emoji: '\uD83D\uDEBF', zahl: 8, name: 'Das Ventil' },
+  ventil:    { emoji: '\uD83D\uDEB0', zahl: 8, name: 'Das Ventil' },
   tuer:      { emoji: '\uD83D\uDEAA', zahl: 4, name: 'Die T\u00fcr' },
 };
 const DECO_PICTURES = {
@@ -414,7 +415,7 @@ const uvReveal = []; // Meshes, die nur unter UV sichtbar sind
     const disc = new THREE.Mesh(new THREE.CircleGeometry(0.14, 20), new THREE.MeshBasicMaterial({ color: o.col }));
     disc.position.set(x, 0.05, 0.01);
     chart.add(disc);
-    const mark = drawTextMesh('•', { color: '#ffffff', size: 64, w: 0.18, h: 0.18 });
+    const mark = drawTextMesh(String(o.n), { color: '#ffffff', size: 64, w: 0.18, h: 0.18 });
     mark.position.set(x, -0.22, 0.02);
     chart.add(mark);
   });
@@ -708,8 +709,12 @@ document.getElementById('resume-btn').addEventListener('click', () => { if (touc
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room5.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -816,7 +821,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------

@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeOutAndGo, saveElapsedMs, clearElapsed } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -351,7 +352,7 @@ function makeSmallTable(x, z, rotation, objects) {
 
   register(book, 'Aufgeschlagenes Buch', () => {
     openReading('Vier Flammen', `
-      <p><i>Morgenrot. Herzschlag. Tiefe. Moos.</i></p>
+      <p><i>Honig. Herzschlag. Tiefe. Moos.</i></p>
       <p>Am Rand klebt Wachs in vier Farben. Daneben steht nur: <i>nicht wieder vertauschen.</i></p>
     `);
     if (state.objectivePhase === 0) setObjective(1);
@@ -978,6 +979,7 @@ function enterRoom() {
 
 document.getElementById('start-btn').addEventListener('click', () => {
   sound.unlock();
+  clearElapsed(); // neuer Durchlauf — Gesamt-Timer zurücksetzen
   enterRoom();
   if (touchControls.isTouchDevice) touchControls.enable();
   else controls.lock();
@@ -1079,7 +1081,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------

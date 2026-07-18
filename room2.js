@@ -18,6 +18,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, fadeOutAndGo, storedElapsedMs, saveElapsedMs, showContinueHint } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -696,6 +697,24 @@ for (let i = 0; i < beamPoints.length - 1; i++) {
   beamSegments.push(seg);
 }
 
+// Der Strahl fließt so weit, wie die Spiegel (in Pfad-Reihenfolge) richtig stehen:
+// Segment 0 (Quelle → Spiegel 1) glimmt immer, jedes weitere leuchtet erst,
+// wenn alle Spiegel davor korrekt sind. So sieht man beim Drehen sofort Wirkung.
+function updateBeam() {
+  let reach = 1;
+  for (const m of mirrors) {
+    if (!m.correct) break;
+    reach++;
+  }
+  beamSegments.forEach((seg, i) => {
+    const target = i >= reach ? 0.0 : (i === 0 && !state.lightSolved ? 0.4 : 0.85);
+    const from = seg.material.opacity;
+    if (Math.abs(target - from) < 0.01) return;
+    animations.push({ t: 0, dur: 0.5, fn: (k) => { seg.material.opacity = from + (target - from) * k; } });
+  });
+}
+updateBeam();
+
 function rotateMirror(data) {
   if (state.lightSolved) return;
   data.state = (data.state + 1) % 4;
@@ -705,20 +724,16 @@ function rotateMirror(data) {
   sound.place();
 
   data.correct = data.state === data.target;
-  // Keine Farb-Rückmeldung - Spieler müssen selbst überprüfen
 
   if (mirrors.every((m) => m.correct)) {
     state.lightSolved = true;
     fillSeal('light');
-    // Lichtpfad entzünden
-    animations.push({
-      t: 0, dur: 1.2, fn: (k) => { beamSegments.forEach((s) => { s.material.opacity = 0.85 * k; }); },
-    });
     toast('Klick — der Mondstrahl springt von Spiegel zu Spiegel und trifft das Tor. Das zweite Siegel lodert auf.');
     sound.success();
     updateObjective();
     checkBothSeals();
   }
+  updateBeam();
 }
 
 // --- Fresko mit dem Hinweis zum Mondpfad ---
@@ -1012,8 +1027,12 @@ document.getElementById('resume-btn').addEventListener('click', () => {
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room3.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -1112,7 +1131,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------
