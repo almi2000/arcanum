@@ -1162,7 +1162,9 @@ function move(dt) {
   const p = camera.position;
   p.y = EYE_HEIGHT;
 
-  const inDoorway = state.doorOpen && Math.abs(p.x) < 1.0 && p.z < -(APOTHEM - 0.4);
+  // Die Schwelle muss VOR der Wand-Klemmung (lim = APOTHEM - 0.55) liegen,
+  // sonst hält die Tür-Kante den Spieler trotz offener Tür fest.
+  const inDoorway = state.doorOpen && Math.abs(p.x) < 1.0 && p.z < -(APOTHEM - 1.2);
 
   // Sechseck-Begrenzung: jede Kante als Halbebene
   const lim = APOTHEM - 0.55;
