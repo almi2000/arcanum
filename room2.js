@@ -18,6 +18,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, fadeOutAndGo, storedElapsedMs, saveElapsedMs, showContinueHint } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -657,8 +658,7 @@ function makeMirror(idx, x, z) {
 
   // Drehbarer Spiegelkopf
   const head = new THREE.Group();
-  head.position.y = 2.0;
-  head.rotation.y = -Math.PI / 2;  // 90° nach links
+  head.position.y = 2.0; // Startstellung 0 — muss zu data.state = 0 passen (Drehziel = state * 90°)
   const frame = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 24), toon(0xc9a227, { emissive: 0x000000 }));
   head.add(frame);
   const glass = new THREE.Mesh(new THREE.CircleGeometry(0.38, 24), new THREE.MeshBasicMaterial({ color: 0x9fb8e8 }));
@@ -697,6 +697,24 @@ for (let i = 0; i < beamPoints.length - 1; i++) {
   beamSegments.push(seg);
 }
 
+// Der Strahl fließt so weit, wie die Spiegel (in Pfad-Reihenfolge) richtig stehen:
+// Segment 0 (Quelle → Spiegel 1) glimmt immer, jedes weitere leuchtet erst,
+// wenn alle Spiegel davor korrekt sind. So sieht man beim Drehen sofort Wirkung.
+function updateBeam() {
+  let reach = 1;
+  for (const m of mirrors) {
+    if (!m.correct) break;
+    reach++;
+  }
+  beamSegments.forEach((seg, i) => {
+    const target = i >= reach ? 0.0 : (i === 0 && !state.lightSolved ? 0.4 : 0.85);
+    const from = seg.material.opacity;
+    if (Math.abs(target - from) < 0.01) return;
+    animations.push({ t: 0, dur: 0.5, fn: (k) => { seg.material.opacity = from + (target - from) * k; } });
+  });
+}
+updateBeam();
+
 function rotateMirror(data) {
   if (state.lightSolved) return;
   data.state = (data.state + 1) % 4;
@@ -706,20 +724,16 @@ function rotateMirror(data) {
   sound.place();
 
   data.correct = data.state === data.target;
-  // Keine Farb-Rückmeldung - Spieler müssen selbst überprüfen
 
   if (mirrors.every((m) => m.correct)) {
     state.lightSolved = true;
     fillSeal('light');
-    // Lichtpfad entzünden
-    animations.push({
-      t: 0, dur: 1.2, fn: (k) => { beamSegments.forEach((s) => { s.material.opacity = 0.85 * k; }); },
-    });
     toast('Klick — der Mondstrahl springt von Spiegel zu Spiegel und trifft das Tor. Das zweite Siegel lodert auf.');
     sound.success();
     updateObjective();
     checkBothSeals();
   }
+  updateBeam();
 }
 
 // --- Fresko mit dem Hinweis zum Mondpfad ---
@@ -975,7 +989,7 @@ const sound = (() => {
     pickup() { tone(660, 0.15); tone(990, 0.25, 'sine', 0.1, 0.08); },
     place() { tone(520, 0.12, 'triangle', 0.07); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() {},
+    success() { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.45, 'triangle', 0.09, i * 0.13)); },
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -989,7 +1003,6 @@ document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
-const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
 const shouldAutoStart = new URLSearchParams(window.location.search).get('autostart') === '1';
 const nextRoomUrl = 'room3.html?autostart=1';
@@ -1014,8 +1027,12 @@ document.getElementById('resume-btn').addEventListener('click', () => {
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room3.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -1049,8 +1066,8 @@ function updateHover(pointer = center) {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = '';
-  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
+  document.getElementById('crosshair').classList.toggle('active', !!hovered);
 }
 
 function interact() {
@@ -1114,7 +1131,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------

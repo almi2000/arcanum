@@ -20,6 +20,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, fadeOutAndGo, storedElapsedMs, saveElapsedMs, showContinueHint } from './transition.js';
 
 // ---------- Grundger\u00fcst ----------
 
@@ -92,7 +93,7 @@ scene.add(hemi);
 const HEMI_BASE = 0.5;
 
 const torchLights = [];
-function makeSconce(x, z, faceX) {
+function makeSconce(x, z) {
   const grp = new THREE.Group();
   grp.position.set(x, 2.7, z);
   grp.lookAt(0, 2.7, z);
@@ -208,7 +209,7 @@ const animations = [];
 const PICTURES = {
   uhr:       { emoji: '\uD83D\uDD52', zahl: 5, name: 'Die Uhr' },
   schluessel:{ emoji: '\uD83D\uDD11', zahl: 2, name: 'Der Schl\u00fcssel' },
-  ventil:    { emoji: '\uD83D\uDEBF', zahl: 8, name: 'Das Ventil' },
+  ventil:    { emoji: '\uD83D\uDEB0', zahl: 8, name: 'Das Ventil' },
   tuer:      { emoji: '\uD83D\uDEAA', zahl: 4, name: 'Die T\u00fcr' },
 };
 const DECO_PICTURES = {
@@ -414,7 +415,7 @@ const uvReveal = []; // Meshes, die nur unter UV sichtbar sind
     const disc = new THREE.Mesh(new THREE.CircleGeometry(0.14, 20), new THREE.MeshBasicMaterial({ color: o.col }));
     disc.position.set(x, 0.05, 0.01);
     chart.add(disc);
-    const mark = drawTextMesh('•', { color: '#ffffff', size: 64, w: 0.18, h: 0.18 });
+    const mark = drawTextMesh(String(o.n), { color: '#ffffff', size: 64, w: 0.18, h: 0.18 });
     mark.position.set(x, -0.22, 0.02);
     chart.add(mark);
   });
@@ -457,6 +458,7 @@ function resetSteps() {
 
 function stepOnTile(tile) {
   if (state.stepsSolved) return;
+  if (tile.lit) return; // bereits korrekt aktivierte Felder bleiben neutral
   if (tile.order === stepIndex + 1) {
     tile.lit = true;
     tile.glow.intensity = 6;
@@ -500,7 +502,6 @@ function buildDoors() {
   const doorW = 1.3, doorH = 3.2;
 
   // Nordwand als Segmente zwischen den T\u00fcren (damit die T\u00fcr\u00f6ffnungen frei sind)
-  const edges = [-HALF_W - 0.2, ...DOOR_DEFS.map((d) => d.x), HALF_W + 0.2];
   // F\u00fcllsegmente zwischen den T\u00fcr-Au\u00dfenkanten
   const stops = [];
   let cursor = -HALF_W - 0.2;
@@ -678,7 +679,7 @@ const sound = (() => {
     note(freq) { tone(freq, 0.4, 'sine', 0.12); tone(freq * 2, 0.25, 'sine', 0.04, 0.01); },
     flick() { tone(1200, 0.05, 'square', 0.06); tone(220, 0.18, 'sawtooth', 0.04, 0.02); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() {},
+    success() { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.45, 'triangle', 0.09, i * 0.13)); },
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -692,7 +693,6 @@ document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
-const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
 const shouldAutoStart = new URLSearchParams(window.location.search).get('autostart') === '1';
 const nextRoomUrl = 'room5.html?autostart=1';
@@ -709,8 +709,12 @@ document.getElementById('resume-btn').addEventListener('click', () => { if (touc
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room5.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -744,8 +748,8 @@ function updateHover(pointer = center) {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = '';
-  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
+  document.getElementById('crosshair').classList.toggle('active', !!hovered);
 }
 
 function interact() {
@@ -817,7 +821,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------
@@ -838,7 +843,7 @@ function animate() {
     const target = state.uvOn ? 2 : torch.base;
     torch.light.intensity += (target + flick * (state.uvOn ? 0.5 : 5) - torch.light.intensity) * Math.min(1, dt * 6);
     torch.flame.scale.setScalar(1 + flick * 0.12);
-    torch.flame.visible = !state.uvOn || true;
+    torch.flame.visible = !state.uvOn;
   }
 
   // Staub

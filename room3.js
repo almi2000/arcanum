@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, fadeOutAndGo, storedElapsedMs, saveElapsedMs, showContinueHint } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -873,7 +874,9 @@ function checkAllLocks() {
     sound.success();
     for (const key of Object.keys(gearLocks)) gearLocks[key].gear.userData.gearSpeed = 2.2;
     releaseGearLocks();
-    openDoor();
+    // Tor erst öffnen, wenn die Zahnräder sichtbar herausgefallen sind —
+    // sonst überschreibt der Tor-Toast sofort die Erfolgsmeldung.
+    setTimeout(openDoor, 1600);
     updateProgress();
   }
 }
@@ -1049,7 +1052,7 @@ const sound = (() => {
     place() { tone(440, 0.18, 'triangle', 0.08); },
     tick() { tone(900, 0.05, 'square', 0.05); tone(1400, 0.04, 'square', 0.03, 0.01); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() {},
+    success() { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.45, 'triangle', 0.09, i * 0.13)); },
     door() { tone(80, 1.2, 'sawtooth', 0.05); tone(60, 1.5, 'square', 0.04, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.5 + i * 0.15)); },
   };
 })();
@@ -1063,7 +1066,6 @@ document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
-const winScreen = document.getElementById('win-screen');
 const hud = document.getElementById('hud');
 const shouldAutoStart = new URLSearchParams(window.location.search).get('autostart') === '1';
 const nextRoomUrl = 'room4.html?autostart=1';
@@ -1088,8 +1090,12 @@ document.getElementById('resume-btn').addEventListener('click', () => {
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room4.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -1123,8 +1129,8 @@ function updateHover(pointer = center) {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = '';
-  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
+  document.getElementById('crosshair').classList.toggle('active', !!hovered);
 }
 
 function interact() {
@@ -1191,7 +1197,8 @@ function win() {
   state.escaped = true;
   controls.unlock();
   sound.success();
-  window.location.href = nextRoomUrl;
+  saveElapsedMs(performance.now() - state.startTime);
+  fadeOutAndGo(nextRoomUrl);
 }
 
 // ---------- Hauptschleife ----------

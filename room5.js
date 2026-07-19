@@ -22,6 +22,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { createMobileControls } from './mobileControls.js';
+import { fadeInOnLoad, storedElapsedMs, clearElapsed, showContinueHint } from './transition.js';
 
 // ---------- Grundgerüst ----------
 
@@ -412,6 +413,7 @@ function bumpPipe(data) {
 const SYMBOLS = ['\u26A0\uFE0F', '\uD83E\uDD7D', '\uD83E\uDDE4', '\uD83D\uDD25', '\u2757'];
 const SYMBOL_NAMES = ['Warnung', 'Augenschutz', 'Handschuhe', 'Feuer', 'Restgefahr'];
 const MAGNET_TARGET = [0, 1, 2, 3, 4]; // Index in SYMBOLS, von links nach rechts
+const MAGNET_START = [2, 4, 1, 0, 3]; // gemischte Ausgangsbelegung \u2014 darf nicht der L\u00F6sung entsprechen
 const magnetSlots = [];
 
 {
@@ -447,10 +449,10 @@ const magnetSlots = [];
     const slotBg = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.46), toon(0x2a2e38));
     slotBg.position.set(sx, 0.05, 0.06);
     board.add(slotBg);
-    const sym = drawTextMesh(SYMBOLS[i], { emoji: true, size: 90, w: 0.42, h: 0.42 });
+    const sym = drawTextMesh(SYMBOLS[MAGNET_START[i]], { emoji: true, size: 90, w: 0.42, h: 0.42 });
     sym.position.set(sx, 0.05, 0.07);
     board.add(sym);
-    const data = { value: i, sym, index: i };
+    const data = { value: MAGNET_START[i], sym, index: i };
     magnetSlots.push(data);
     register(slotBg, 'Magnet versetzen', () => cycleMagnet(data));
   }
@@ -1017,7 +1019,7 @@ const sound = (() => {
     hiss() { noise(0.6, 0.05); },
     flame() { tone(160, 0.5, 'sawtooth', 0.05); noise(0.4, 0.03); },
     thud() { tone(110, 0.25, 'square', 0.06); },
-    success() {},
+    success() { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, 0.45, 'triangle', 0.09, i * 0.13)); },
     door() { tone(70, 1.4, 'sawtooth', 0.06); tone(55, 1.6, 'square', 0.05, 0.2); [392, 523, 659].forEach((f, i) => tone(f, 0.5, 'sine', 0.08, 0.6 + i * 0.15)); },
   };
 })();
@@ -1047,8 +1049,12 @@ document.getElementById('resume-btn').addEventListener('click', () => { if (touc
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
 
 if (shouldAutoStart) {
+  fadeInOnLoad();
+  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
   enterRoom();
+  const hideHint = showContinueHint();
   const lockOnInput = () => {
+    hideHint();
     sound.unlock();
     if (touchControls.isTouchDevice) touchControls.enable();
     else controls.lock();
@@ -1082,8 +1088,8 @@ function updateHover(pointer = center) {
   for (const e of interactables) if (e.enabled) meshes.push(e.object);
   const hits = raycaster.intersectObjects(meshes, true);
   hovered = hits.length ? hits[0].object.userData.entry : null;
-  document.getElementById('hover-label').textContent = '';
-  document.getElementById('crosshair').classList.remove('active');
+  document.getElementById('hover-label').textContent = hovered ? hovered.label : '';
+  document.getElementById('crosshair').classList.toggle('active', !!hovered);
 }
 
 function interact() {
@@ -1145,6 +1151,7 @@ function win() {
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
   document.getElementById('win-time').textContent = `${mm}:${ss}`;
+  clearElapsed(); // Durchlauf beendet — gespeicherte Zeit verwerfen
   hud.classList.add('hidden');
   winScreen.classList.remove('hidden');
   controls.unlock();
