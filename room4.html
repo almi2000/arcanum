@@ -6,15 +6,13 @@
   <title>Arcanum — Der Lange Flur des Erzmagiers</title>
   <meta name="description" content="Raum 4 des 3D-Fantasy-Escape-Rooms: Bilder-Code, Schwarzlicht, Schrittfolge und Türen-Logik in einem finsteren Korridor." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#x1F6AA;</text></svg>" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="premium.css" />
   <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/"
       }
     }
   </script>
@@ -95,6 +93,7 @@
   <div id="vignette"></div>
   <div id="grain"></div>
 
-  <script type="module" src="room4.js"></script>
+  <script type="module" src="boot.js"></script>
+<noscript><div class="noscript-message">Arcanum benötigt JavaScript. Bitte aktiviere es, um den Turm zu betreten.</div></noscript>
 </body>
 </html>

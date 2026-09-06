@@ -1,3 +1,6 @@
+import { enhanceAtmosphere } from './atmosphere.js';
+import { createExperience } from './experience.js';
+let experience;
 // ============ Arcanum — Raum 5: Die Dampfhalle des Erzmagiers ============
 //
 // Architektur-Hinweis (vgl. main.js / room2.js / room3.js / room4.js):
@@ -75,7 +78,7 @@ function drawTextMesh(text, { color = '#e9d8ab', size = 64, bg = null, w = 0.5, 
   mesh.userData.redraw = (txt) => {
     ctx.clearRect(0, 0, c.width, c.height);
     if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, c.width, c.height); }
-    ctx.font = `${emoji ? '' : '700 '}${size}px ${emoji ? 'serif' : '"Grenze Gotisch", serif'}`;
+    ctx.font = `${emoji ? '' : '700 '}${size}px ${emoji ? 'serif' : '"Cormorant Garamond", serif'}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = color;
@@ -308,7 +311,7 @@ function makePipePlan() {
     ctx.lineWidth = 4; ctx.strokeStyle = open ? '#7af0d8' : '#7a5a6a';
     ctx.stroke();
     ctx.fillStyle = open ? '#bdfff2' : '#caa';
-    ctx.font = '700 26px "Grenze Gotisch", serif';
+    ctx.font = '700 26px "Cormorant Garamond", serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('V' + num, x, y);
   };
@@ -316,7 +319,7 @@ function makePipePlan() {
   valve('v5', 5, false); valve('v2', 2, false); valve('v8', 8, false);
 
   // Endpunkte
-  ctx.font = '700 26px "Grenze Gotisch", serif';
+  ctx.font = '700 26px "Cormorant Garamond", serif';
   ctx.fillStyle = '#ffe49a';
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.fillText('DAMPF', 20, 415);
@@ -495,7 +498,7 @@ function drawSafetyPoster() {
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#e7dcc0'; ctx.fillRect(0, 0, c.width, c.height);
   ctx.fillStyle = '#7a2d22'; ctx.fillRect(0, 0, c.width, 56);
-  ctx.fillStyle = '#fff'; ctx.font = '700 30px "Grenze Gotisch", serif';
+  ctx.fillStyle = '#fff'; ctx.font = '700 30px "Cormorant Garamond", serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('SICHERHEIT', c.width / 2, 28);
   const items = ['\u26A0\uFE0F Warnung beachten', '\uD83E\uDD7D Augenschutz', '\uD83E\uDDE4 Handschuhe', '\uD83D\uDD25 Feuer fernhalten', '\u2757 Restgefahr'];
@@ -504,7 +507,7 @@ function drawSafetyPoster() {
   items.forEach((t, i) => {
     ctx.font = '32px serif';
     ctx.fillText(String(i + 1) + '.', 20, 100 + i * 56);
-    ctx.font = '24px "IM Fell English", serif';
+    ctx.font = '24px "Cormorant Garamond", serif';
     ctx.fillText(t, 60, 100 + i * 56);
   });
   const tex = new THREE.CanvasTexture(c);
@@ -672,7 +675,7 @@ const numberWheels = [];
   scene.add(cab);
 
   // Anweisungsschild
-  const instr = drawTextMesh('\uD83E\uDDEF zählt.', { color: '#e9d8ab', size: 34, w: 1.5, h: 0.34 });
+  const instr = drawTextMesh('Addiere alle Schränke mit 🧯.', { color: '#e9d8ab', size: 34, w: 1.5, h: 0.34 });
   instr.position.set(-HALF_X + 0.16, 3.4, -3.5);
   instr.rotation.y = Math.PI / 2;
   scene.add(instr);
@@ -761,7 +764,7 @@ let shadowLamp, shadowBulb, shadowLight, shadowObjGroup, shadowScreenTex, shadow
     ctx.fillStyle = 'rgba(20,16,12,0.92)';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (idx === SHADOW_CORRECT) {
-      ctx.font = '700 150px "Grenze Gotisch", serif';
+      ctx.font = '700 150px "Cormorant Garamond", serif';
       ctx.fillText('729', sc.width / 2, sc.height / 2 + 6);
     } else {
       // verzerrte, übereinanderliegende Schatten
@@ -770,7 +773,7 @@ let shadowLamp, shadowBulb, shadowLight, shadowObjGroup, shadowScreenTex, shadow
       const sets = [['7', '2', '9'], ['1', '5', '3'], ['4', '8', '6'], ['9', '0', '2']];
       const glyphs = sets[idx % sets.length];
       glyphs.forEach((g, i) => {
-        ctx.font = '700 150px "Grenze Gotisch", serif';
+        ctx.font = '700 150px "Cormorant Garamond", serif';
         ctx.fillText(g, sc.width / 2 + (i - 1) * 18 * (idx + 1), sc.height / 2 + 6 + (i - 1) * 10);
       });
       ctx.restore();
@@ -969,6 +972,7 @@ function fillLock(key) {
 
 let readingOpen = false;
 function openReading(title, html) {
+  experience?.record(title, html);
   readingOpen = true;
   document.getElementById('reading-title').textContent = title;
   document.getElementById('reading-body').innerHTML = html;
@@ -982,8 +986,8 @@ function closeReading() {
 // ---------- Klang ----------
 
 const sound = (() => {
-  let ctx;
-  function ac() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
+  let ctx, audioOutput;
+  function ac() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); audioOutput = experience?.routeAudio(ctx) || ctx.destination; } return ctx; }
   function tone(freq, dur, type = 'sine', vol = 0.12, when = 0) {
     const a = ac();
     const t0 = a.currentTime + when;
@@ -994,7 +998,7 @@ const sound = (() => {
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(gain).connect(a.destination);
+    osc.connect(gain).connect(audioOutput);
     osc.start(t0);
     osc.stop(t0 + dur + 0.05);
   }
@@ -1007,7 +1011,7 @@ const sound = (() => {
     const src = a.createBufferSource(); src.buffer = buf;
     const g = a.createGain(); g.gain.value = vol;
     const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800;
-    src.connect(f).connect(g).connect(a.destination);
+    src.connect(f).connect(g).connect(audioOutput);
     src.start(t0);
   }
   return {
@@ -1028,8 +1032,13 @@ const sound = (() => {
 
 const controls = new PointerLockControls(camera, document.body);
 const keys = {};
-document.addEventListener('keydown', (e) => { keys[e.code] = true; });
+document.addEventListener('keydown', (e) => { if (experience?.isPlaying() && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) keys[e.code] = true; });
 document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
+const velocity = new THREE.Vector3();
+enhanceAtmosphere(scene, renderer, 5);
+experience = createExperience({ chapter: 5, state, controls, touch: touchControls, renderer, camera, keys, velocity, closeReading, sound });
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
@@ -1038,39 +1047,23 @@ const hud = document.getElementById('hud');
 const shouldAutoStart = new URLSearchParams(window.location.search).get('autostart') === '1';
 
 function enterRoom() {
+  experience?.begin();
   titleScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
   hud.classList.remove('hidden');
   if (!state.startTime) state.startTime = performance.now();
 }
 
-document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); if (touchControls.isTouchDevice) touchControls.enable(); else controls.lock(); });
-document.getElementById('resume-btn').addEventListener('click', () => { if (touchControls.isTouchDevice) touchControls.enable(); else controls.lock(); });
+document.getElementById('start-btn').addEventListener('click', () => { sound.unlock(); enterRoom(); if (touchControls.isTouchDevice) touchControls.enable(); else experience.requestPlay(); });
+document.getElementById('resume-btn').addEventListener('click', () => { if (touchControls.isTouchDevice) touchControls.enable(); else experience.requestPlay(); });
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'index.html'; });
-
-if (shouldAutoStart) {
-  fadeInOnLoad();
-  state.startTime = performance.now() - storedElapsedMs(); // Gesamt-Timer läuft über Räume weiter
-  enterRoom();
-  const hideHint = showContinueHint();
-  const lockOnInput = () => {
-    hideHint();
-    sound.unlock();
-    if (touchControls.isTouchDevice) touchControls.enable();
-    else controls.lock();
-    document.removeEventListener('click', lockOnInput);
-    document.removeEventListener('keydown', lockOnInput);
-  };
-  document.addEventListener('click', lockOnInput);
-  document.addEventListener('keydown', lockOnInput);
-}
 
 controls.addEventListener('lock', () => {
   enterRoom();
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
-  if (touchControls.isActive()) return;
+  experience.pause();
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -1093,24 +1086,25 @@ function updateHover(pointer = center) {
 }
 
 function interact() {
+  if (!experience.isPlaying()) return;
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
 
-const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
+
 
 document.addEventListener('mousedown', (e) => { if (controls.isLocked && e.button === 0) interact(); });
-document.addEventListener('keydown', (e) => { if (controls.isLocked && e.code === 'KeyE') interact(); });
+document.addEventListener('keydown', (e) => { if (experience.isPlaying() && e.code === 'KeyE' && !e.repeat) interact(); });
 
 // ---------- Bewegung & Kollision (Halle) ----------
 
-const velocity = new THREE.Vector3();
+
 function move(dt) {
   const speed = 4.4;
   const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
   const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
-  velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
-  velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
+  velocity.x = THREE.MathUtils.damp(velocity.x, side * speed / Math.max(1, Math.hypot(side, fwd)), 12, dt);
+  velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed / Math.max(1, Math.hypot(side, fwd)), 12, dt);
   controls.moveRight(velocity.x * dt);
   controls.moveForward(velocity.z * dt);
 
@@ -1146,12 +1140,13 @@ function move(dt) {
 }
 
 function win() {
+  experience.complete();
   state.escaped = true;
-  const secs = Math.floor((performance.now() - state.startTime) / 1000);
+  const secs = Math.floor((experience.elapsed()) / 1000);
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
   document.getElementById('win-time').textContent = `${mm}:${ss}`;
-  clearElapsed(); // Durchlauf beendet — gespeicherte Zeit verwerfen
+  // Campaign result and checkpoint are retained by experience.complete().
   hud.classList.add('hidden');
   winScreen.classList.remove('hidden');
   controls.unlock();
@@ -1197,16 +1192,17 @@ function animate() {
   }
 
   if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
-    move(dt);
+    if (experience.isPlaying() && !readingOpen) move(dt);
     updateHover();
     if (state.startTime) {
-      const secs = Math.floor((performance.now() - state.startTime) / 1000);
+      const secs = Math.floor((experience.elapsed()) / 1000);
       const mm = String(Math.floor(secs / 60)).padStart(2, '0');
       const ss = String(secs % 60).padStart(2, '0');
       document.getElementById('timer').textContent = `${mm}:${ss}`;
     }
   }
 
+  experience.tick();
   renderer.render(scene, camera);
 }
 

@@ -1,3 +1,6 @@
+import { enhanceAtmosphere } from './atmosphere.js';
+import { createExperience } from './experience.js';
+let experience;
 // ============ Arcanum — Entkomme dem Turm des Erzmagiers ============
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
@@ -241,7 +244,7 @@ function runeGlyph(glyph, color = '#e9d8ab', scale = 1) {
   canvas.height = 128;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = '700 84px "Grenze Gotisch", serif';
+  ctx.font = '700 84px "Cormorant Garamond", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = color;
@@ -828,7 +831,9 @@ function placeRune(ped) {
   updateObjective();
 }
 
+let candleResetting = false;
 function lightCandle(key) {
+  if (candleResetting) return;
   const c = candles[key];
   if (state.candlesSolved || c.lit) return;
   const expected = CANDLE_ORDER[state.candleProgress];
@@ -846,6 +851,7 @@ function lightCandle(key) {
       updateObjective();
     }
   } else {
+    candleResetting = true;
     // falsche Reihenfolge: kurz brennen lassen, dann alles löschen
     setTimeout(() => {
       for (const k of Object.keys(candles)) {
@@ -854,6 +860,7 @@ function lightCandle(key) {
         candles[k].light.intensity = 0;
       }
       state.candleProgress = 0;
+      candleResetting = false;
       toast('Ein kalter Windhauch — alle Flammen erlöschen zischend.');
       sound.thud();
     }, 600);
@@ -862,7 +869,7 @@ function lightCandle(key) {
 
 function openDoor() {
   state.doorOpen = true;
-  toast('Der Schlüssel dreht sich dreimal. Die Tür schwingt knarrend auf — Freiheit!');
+  toast('Der Schlüssel dreht sich dreimal. Die Tür schwingt knarrend auf. Dahinter wartet der Sternensaal.');
   sound.door();
   document.getElementById('slot-key').classList.add('used');
   animations.push({
@@ -915,6 +922,7 @@ function fillSlot(key) {
 
 let readingOpen = false;
 function openReading(title, html) {
+  experience?.record(title, html);
   readingOpen = true;
   document.getElementById('reading-title').textContent = title;
   document.getElementById('reading-body').innerHTML = html;
@@ -928,9 +936,9 @@ function closeReading() {
 // ---------- Klang (WebAudio, rein synthetisch) ----------
 
 const sound = (() => {
-  let ctx;
+  let ctx, audioOutput;
   function ac() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); audioOutput = experience?.routeAudio(ctx) || ctx.destination; }
     return ctx;
   }
   function tone(freq, dur, type = 'sine', vol = 0.12, when = 0) {
@@ -943,7 +951,7 @@ const sound = (() => {
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(gain).connect(a.destination);
+    osc.connect(gain).connect(audioOutput);
     osc.start(t0);
     osc.stop(t0 + dur + 0.05);
   }
@@ -962,8 +970,13 @@ const sound = (() => {
 
 const controls = new PointerLockControls(camera, document.body);
 const keys = {};
-document.addEventListener('keydown', (e) => { keys[e.code] = true; });
+document.addEventListener('keydown', (e) => { if (experience?.isPlaying() && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) keys[e.code] = true; });
 document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
+const velocity = new THREE.Vector3();
+enhanceAtmosphere(scene, renderer, 1);
+experience = createExperience({ chapter: 1, state, controls, touch: touchControls, renderer, camera, keys, velocity, closeReading, sound });
 
 const titleScreen = document.getElementById('title-screen');
 const pauseScreen = document.getElementById('pause-screen');
@@ -971,6 +984,7 @@ const hud = document.getElementById('hud');
 const nextRoomUrl = 'room2.html?autostart=1';
 
 function enterRoom() {
+  experience?.begin();
   titleScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
   hud.classList.remove('hidden');
@@ -982,11 +996,11 @@ document.getElementById('start-btn').addEventListener('click', () => {
   clearElapsed(); // neuer Durchlauf — Gesamt-Timer zurücksetzen
   enterRoom();
   if (touchControls.isTouchDevice) touchControls.enable();
-  else controls.lock();
+  else experience.requestPlay();
 });
 document.getElementById('resume-btn').addEventListener('click', () => {
   if (touchControls.isTouchDevice) touchControls.enable();
-  else controls.lock();
+  else experience.requestPlay();
 });
 document.getElementById('again-btn').addEventListener('click', () => { window.location.href = 'room2.html'; });
 
@@ -995,7 +1009,7 @@ controls.addEventListener('lock', () => {
 });
 controls.addEventListener('unlock', () => {
   if (state.escaped) return;
-  if (touchControls.isActive()) return;
+  experience.pause();
   closeReading();
   pauseScreen.classList.remove('hidden');
 });
@@ -1018,28 +1032,29 @@ function updateHover(pointer = center) {
 }
 
 function interact() {
+  if (!experience.isPlaying()) return;
   if (readingOpen) { closeReading(); return; }
   if (hovered && hovered.enabled) hovered.onUse(hovered);
 }
 
-const touchControls = createMobileControls({ THREE, camera, enterRoom, interact, updateHover, sound });
+
 
 document.addEventListener('mousedown', (e) => {
   if (controls.isLocked && e.button === 0) interact();
 });
 document.addEventListener('keydown', (e) => {
-  if (controls.isLocked && e.code === 'KeyE') interact();
+  if (experience.isPlaying() && e.code === 'KeyE' && !e.repeat) interact();
 });
 
 // ---------- Bewegung & Kollision ----------
 
-const velocity = new THREE.Vector3();
+
 function move(dt) {
   const speed = 4.2;
   const fwd = THREE.MathUtils.clamp((keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) + touchControls.move.z, -1, 1);
   const side = THREE.MathUtils.clamp((keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touchControls.move.x, -1, 1);
-  velocity.x = THREE.MathUtils.damp(velocity.x, side * speed, 12, dt);
-  velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed, 12, dt);
+  velocity.x = THREE.MathUtils.damp(velocity.x, side * speed / Math.max(1, Math.hypot(side, fwd)), 12, dt);
+  velocity.z = THREE.MathUtils.damp(velocity.z, fwd * speed / Math.max(1, Math.hypot(side, fwd)), 12, dt);
   controls.moveRight(velocity.x * dt);
   controls.moveForward(velocity.z * dt);
 
@@ -1078,10 +1093,11 @@ function move(dt) {
 }
 
 function win() {
+  experience.complete();
   state.escaped = true;
   controls.unlock();
   sound.success();
-  saveElapsedMs(performance.now() - state.startTime);
+  saveElapsedMs(experience.elapsed());
   fadeOutAndGo(nextRoomUrl);
 }
 
@@ -1141,16 +1157,17 @@ function animate() {
   }
 
   if ((controls.isLocked || touchControls.isActive()) && !state.escaped) {
-    move(dt);
+    if (experience.isPlaying() && !readingOpen) move(dt);
     updateHover();
     if (state.startTime) {
-      const secs = Math.floor((performance.now() - state.startTime) / 1000);
+      const secs = Math.floor((experience.elapsed()) / 1000);
       const mm = String(Math.floor(secs / 60)).padStart(2, '0');
       const ss = String(secs % 60).padStart(2, '0');
       document.getElementById('timer').textContent = `${mm}:${ss}`;
     }
   }
 
+  experience.tick();
   renderer.render(scene, camera);
 }
 

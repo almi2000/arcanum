@@ -33,16 +33,17 @@ export function fadeOutAndGo(url) {
 
 // Gesamt-Spielzeit über Raumgrenzen hinweg.
 export function storedElapsedMs() {
-  const v = Number(localStorage.getItem(ELAPSED_KEY));
+  let v = 0;
+  try { v = Number(localStorage.getItem(ELAPSED_KEY)); } catch { return 0; }
   return Number.isFinite(v) && v > 0 ? v : 0;
 }
 
 export function saveElapsedMs(ms) {
-  localStorage.setItem(ELAPSED_KEY, String(Math.max(0, Math.round(ms))));
+  try { localStorage.setItem(ELAPSED_KEY, String(Math.max(0, Math.round(ms)))); } catch { /* Storage is optional. */ }
 }
 
 export function clearElapsed() {
-  localStorage.removeItem(ELAPSED_KEY);
+  try { localStorage.removeItem(ELAPSED_KEY); } catch { /* Storage is optional. */ }
 }
 
 // Pointer Lock braucht eine Nutzergeste — bis dahin einen pulsierenden Hinweis
