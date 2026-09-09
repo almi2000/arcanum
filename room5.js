@@ -376,7 +376,7 @@ const pipeWheels = [];
     // Ziffer auf Würfel-Vorderseite
     const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.19, h: 0.19 });
     digit.position.set(0, 0, 0.095);
-    digit.rotation.x = 0.5;
+    // Inherit the drum tilt so the entire label stays in front of the cube.
     drum.add(digit);
     console0.add(drum);
 
@@ -705,7 +705,7 @@ const numberWheels = [];
     // Ziffer auf Würfel-Vorderseite
     const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.19, h: 0.19 });
     digit.position.set(0, 0, 0.095);
-    digit.rotation.x = 0.5;
+    // Inherit the drum tilt so the entire label stays in front of the cube.
     drum.add(digit);
     pad.add(drum);
     const data = { value: 0, digit, cube };
@@ -1207,7 +1207,6 @@ function animate() {
 }
 
 animate();
-
 
 
 

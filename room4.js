@@ -82,7 +82,7 @@ function drawTextMesh(text, { color = '#e9d8ab', size = 64, bg = null, w = 0.5, 
     ctx.fillStyle = color;
     ctx.shadowColor = 'rgba(0,0,0,0.85)';
     ctx.shadowBlur = 8;
-    ctx.fillText(txt, c.width / 2, c.height / 2);
+    ctx.fillText(txt, c.width / 2, c.height / 2, c.width - 16);
     tex.needsUpdate = true;
   };
   mesh.userData.redraw(text);
@@ -303,13 +303,15 @@ const codeWheels = [];
   for (let i = 0; i < 4; i++) {
     const wx = -0.45 + i * 0.3;
     const drum = new THREE.Group();
-    drum.position.set(wx, 1.2, 0.06);
+    // Raise the whole drum clear of the tilted lectern slab.
+    drum.position.set(wx, 1.36, 0.06);
     drum.rotation.x = -0.45;
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.16, 16), toon(0xc9a227));
     body.rotation.z = Math.PI / 2;
     drum.add(body);
     const digit = drawTextMesh('0', { color: '#2a1d12', size: 80, w: 0.16, h: 0.16 });
-    digit.position.set(0, 0, 0.085);
+    // Keep the printed face outside the drum's 0.11 radius.
+    digit.position.set(0, 0, 0.115);
     drum.add(digit);
     lectern.add(drum);
 
@@ -556,8 +558,9 @@ function buildDoors() {
 
     // Gravur mit Hinweis (kleiner, dunkler)
     const clue = drawTextMesh(def.clue, { color: '#9aa0c0', size: 30, w: 1.15, h: 0.26 });
-    clue.position.set(0, 0.7, 0.16);
-    grp.add(clue);
+    // Place the inscription in front of the leaf and carry it with the hinge.
+    clue.position.set(doorW / 2, 0.7, 0.08);
+    pivot.add(clue);
 
     scene.add(grp);
 
@@ -569,7 +572,7 @@ function buildDoors() {
 
   // Meta-Hinweistafel mittig \u00fcber den T\u00fcren
   const meta = drawTextMesh('Was nichts trägt, trägt dich fort.', { color: '#e9d8ab', size: 30, w: 3.2, h: 0.4 });
-  meta.position.set(0, doorH + 0.7, Z_NORTH);
+  meta.position.set(0, doorH + 0.7, Z_NORTH + 0.02);
   scene.add(meta);
 }
 

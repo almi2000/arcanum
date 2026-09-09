@@ -69,6 +69,104 @@ test('clockwork: melody, balance and clock jointly unlock chapter IV', () => {
   room.run('win()'); assert.equal(room.result().destination, 'room4.html?autostart=1');
 });
 
+test('corridor: wheel digits are visible in front of the metal drums', () => {
+  const room = loadRoom('room4.js');
+  assert.equal(room.run(`(() => {
+    scene.updateMatrixWorld(true);
+    return codeWheels.every(({ digit, body }) => {
+      const center = digit.localToWorld(new THREE.Vector3(0.02, 0.01, 0));
+      const normal = new THREE.Vector3(0, 0, 1).transformDirection(digit.matrixWorld);
+      const ray = new THREE.Raycaster(center.clone().addScaledVector(normal, 1), normal.negate());
+      return ray.intersectObjects([digit, body])[0]?.object === digit;
+    });
+  })()`), true);
+});
+
+function hiddenLabelSamples(room, labelsExpression) {
+  return room.run(`(() => {
+    scene.updateMatrixWorld(true);
+    const blockers = [];
+    scene.traverse(object => {
+      if (object.isMesh && !object.material.transparent) blockers.push(object);
+    });
+    const hidden = [];
+    for (const label of ${labelsExpression}) {
+      const { width, height } = label.geometry.parameters;
+      for (const x of [-0.2, 0, 0.2]) for (const y of [-0.2, 0, 0.2]) {
+        const point = label.localToWorld(new THREE.Vector3(width * x, height * y, 0));
+        const normal = new THREE.Vector3(0, 0, 1).transformDirection(label.matrixWorld);
+        const ray = new THREE.Raycaster(point.clone().addScaledVector(normal, 0.3), normal.negate(), 0, 0.301);
+        if (ray.intersectObjects(blockers, false).some(hit => hit.distance <= 0.3001)) {
+          hidden.push({ position: label.position.toArray(), x, y });
+        }
+      }
+    }
+    return JSON.stringify(hidden);
+  })()`);
+}
+
+test('corridor: picture, UV and door labels stand clear of opaque geometry', () => {
+  const room = loadRoom('room4.js');
+  assert.equal(hiddenLabelSamples(room, `(() => {
+    const labels = [];
+    scene.traverse(object => { if (object.userData.redraw) labels.push(object); });
+    return labels;
+  })()`), '[]');
+});
+
+test('steam hall: all seven wheel labels stand clear of their consoles', () => {
+  const room = loadRoom('room5.js');
+  assert.equal(hiddenLabelSamples(room, '[...pipeWheels, ...numberWheels].map(wheel => wheel.digit)'), '[]');
+});
+
+test('corridor: failed attempts reset and clues follow the UV and door states', () => {
+  const room = loadRoom('room4.js');
+  room.use('Schwarzlicht-Lampe');
+  assert.equal(room.run('state.uvOn || state.uvSeen || uvReveal.some(mesh => mesh.visible)'), false);
+  room.run('doors.forEach(tryDoor)');
+  assert.equal(room.run('state.doorOpen'), false);
+  room.run('for (let i = 0; i < 10; i++) bumpWheel(codeWheels[0])');
+  assert.equal(room.run('codeWheels[0].value'), 0);
+  assert.equal(room.run('state.codeSolved'), false);
+  room.run('codeWheels.forEach((wheel,i) => { for(let n=0;n<CODE[i];n++) bumpWheel(wheel); })');
+  room.run('codeWheels.forEach(bumpWheel)');
+  assert.equal(room.run('codeWheels.every((wheel, i) => wheel.value === CODE[i])'), true);
+  room.use('Schwarzlicht-Lampe');
+  assert.equal(room.run('uvReveal.every(mesh => mesh.visible)'), true);
+  room.use('Schwarzlicht-Lampe');
+  assert.equal(room.run('uvReveal.every(mesh => !mesh.visible) && state.uvSeen'), true);
+  room.run('stepOnTile(stepTiles.find(tile => tile.order === 1)); stepOnTile(stepTiles.find(tile => tile.order === 3));');
+  assert.equal(room.run('stepIndex === 0 && stepTiles.every(tile => !tile.lit && tile.glow.intensity === 0)'), true);
+  assert.equal(room.run('state.doorsLive'), false);
+  room.run('[...stepTiles].sort((a,b)=>a.order-b.order).forEach(stepOnTile)');
+  room.run('doors.filter(door => !door.def.empty).forEach(tryDoor)');
+  assert.equal(room.run('state.doorOpen'), false);
+  room.use('Lager');
+  room.run('animations.forEach(animation => animation.fn(1))');
+  assert.equal(room.run('state.doorOpen'), true);
+  assert.equal(hiddenLabelSamples(room, `doors.flatMap(door => door.pivot.children.filter(mesh => mesh.userData.redraw))`), '[]');
+});
+
+test('steam hall: wheel interactions wrap, redraw and lock after solving', () => {
+  const room = loadRoom('room5.js');
+  for (const [wheels, label, target, solved] of [
+    ['pipeWheels', 'Ventil-Walze drehen', 'PIPE_CODE', 'pipesSolved'],
+    ['numberWheels', 'Zahlenrad drehen', 'NUMBER_CODE', 'numbersSolved'],
+  ]) {
+    const version = room.run(`${wheels}[0].digit.material.map.version`);
+    for (let i = 0; i < 10; i++) room.use(label);
+    assert.equal(room.run(`${wheels}[0].value`), 0);
+    assert.equal(room.run(`${wheels}[0].digit.material.map.version`), version + 10);
+    assert.equal(room.run(`state.${solved}`), false);
+    room.run(`${wheels}.forEach((wheel, i) => {
+      for (let n = 0; n < ${target}[i]; n++) wheel.digit.userData.entry.onUse();
+    })`);
+    assert.equal(room.run(`state.${solved}`), true);
+    room.use(label);
+    assert.equal(room.run(`${wheels}.every((wheel, i) => wheel.value === ${target}[i])`), true);
+  }
+});
+
 test('corridor: code, UV clue and floor sequence unlock only the correct door', () => {
   const room = loadRoom('room4.js');
   room.run('[...stepTiles].sort((a,b)=>a.order-b.order).forEach(stepOnTile)');
